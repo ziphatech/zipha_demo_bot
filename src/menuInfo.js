@@ -111,6 +111,7 @@ const groupInfo = {
   </strong>
       `,
   "Agree Two": "<blockquote><i>You'd be redirected to send a direct message to Greysuitfx so he can contact you and give you the next update</i></blockquote>",
+  "3 Days BootCamp": `3 days bot camp Fee : $ 79.9`,
   "FAQs":[`
 
   <strong>Frequently Asked Questions (FAQ)</strong>

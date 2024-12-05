@@ -26,6 +26,7 @@ async function initializeGreybot() {
         "message",
         "callback_query",
         "channel_post",
+        "poll_answer"
         // "inline_query",
         // "chosen_inline_result"
       ],

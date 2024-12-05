@@ -1,5 +1,5 @@
 const { groupInfo } = require("../../menuInfo");
-const { handleSettingsChange } = require("../callback_handlers/handleSettings");
+const { handleSettingsChange,generateCouponHandler } = require("../callback_handlers/handleSettings");
 const { getSubscriptionStatus } = require("../callback_handlers/checkSubscriptionStatus");
 const {
   handleBankTransfer,
@@ -7,12 +7,13 @@ const {
   handleBtcPay,
   handleUsdtPay,
   handleSkrillPay,
-  handleFAQ,
   handleFAQText,
   handleEthereumPay,
 } = require("../callback_handlers/menuButtonsCallback");
 const nav = require("./navigation_singleton");
+const Coupon = require("../../model/couponClass");
 const navigation = nav();
+const couponInstance = Coupon.getInstance()
 const navigationMap = (ctx,messageId,userId,data) => {
   const { oneMonth, threeMonth, sixMonth, oneYear } =
   data?.vipDiscountPrice;
@@ -40,6 +41,14 @@ const navigationMap = (ctx,messageId,userId,data) => {
     "prop_firm":{
       navigation: "Prop Firm",
       callback: null,
+    },
+    "bootcamp":{
+      navigation:"3 Days BootCamp",
+      callback:null
+    },
+    "bootcamp_payment":{
+      navigation:"Pay Fee: $79.99",
+      callback:null
     },
     "$10,000 - $49,000": {
       navigation: "$10,000 - $49,000",
@@ -109,6 +118,18 @@ const navigationMap = (ctx,messageId,userId,data) => {
       navigation:"Check Subscription Status",
       callback:getSubscriptionStatus, 
     },
+    "generate_code":{
+      navigation:"Generate Code",
+      callback:null
+    },   
+    "gift_coupon":{
+      navigation:"Gift Coupon",
+      callback:null
+    }, 
+    'generate_coupon':{
+      navigation:"Generate Coupon",
+      callback:generateCouponHandler, 
+    },
     "faq": {
       navigation: (ctx) => {
         navigation.setFAQIndex(userId, 0)
@@ -149,6 +170,10 @@ const navigationMap = (ctx,messageId,userId,data) => {
     "vipPrice":{
       navigation:"Vip Prices",
       callback: handleSettingsChange
+    },
+    'generate_code':{
+      navigation:"Generate Code",
+      callback:couponInstance.generateCoupon.bind(couponInstance), 
     },
     "goback": {
       navigation: navigation.goBack.bind(navigation),

@@ -15,7 +15,21 @@ const catchMechanismClass = require("../../config/catchMechanismClass");
 const catchMechanismClassInstance = catchMechanismClass.getInstance(
   mongoose.connection
 );
-
+const Coupon = require("../../model/couponClass")
+const couponInstance = Coupon.getInstance()
+const ALLOWED_PAYMENT_OPTIONS = {
+  MENTORSHIP_PRICE_LIST: "mentorship_price_list",
+  BOOTCAMP_PAYMENT:"bootcamp_payment",
+  ONE_MONTH: "one_month",
+  THREE_MONTHS: "three_months",
+  SIX_MONTHS: "six_months",
+  TWELVE_MONTHS: "twelve_months",
+};
+const PAYMENT_OPTIONS = {
+  FUND_MANAGEMENT: '$10,000 - $49,000',
+  MENTORSHIP_PRICE_LIST: 'mentorship_price_list',
+  ONE_ON_ONE_PRICE_LIST: 'one_on_one_price_list',
+};
 exports.handleUsdtPay = async (ctx) => {
   try {
     const replyText = ` <strong>Please make payment to any of the addresses below</strong>
@@ -443,10 +457,10 @@ exports.approveCallback = async (ctx, uniqueId) => {
     const {
       VIP_SIGNAL_ID: channelId,
       MENTORSHIP_CHANNEL_ID,
+      BOOTCAMP_CHANNEL_ID,
       GOOGLE_DRIVE_LINK: googleDriveLink,
       ADMIN_ID,
     } = process.env;
-
     const {
       callback_query: {
         message: {
@@ -467,18 +481,18 @@ exports.approveCallback = async (ctx, uniqueId) => {
       console.error("User storage data not found for userId:", uniqueId);
       return;
     }
-    const { isExpired, isActive, paymentOption } = userStorage;
+    const subscriptionType = createUserInstance.getSubscriptionType()
+    const { isExpired, isActive} = userStorage;
     const screenshotData = userStorage.screenshots.get(uniqueId);
     if (!screenshotData) {
-        await ctx.answerCallbackQuery({
+        await ctx.answerCallbackQuery({ 
           callback_query_id: callbackQueryId,
           text: "Error handling screenshot data.",
           show_alert: true,
         });
         return;
     }
-    const { username, userId } = screenshotData;
-
+    const { username, userId, package } = screenshotData;
     // console.log(username, isExpired, isActive, "isExpired, isActive", username);
     if (!messageId) {
       await ctx.answerCallbackQuery({
@@ -490,14 +504,8 @@ exports.approveCallback = async (ctx, uniqueId) => {
       return;
     }
 
-    const PAYMENT_OPTIONS = {
-      FUND_MANAGEMENT: "$10,000 - $49,000",
-      ONE_ON_ONE_MENTORSHIP: "1 - On - 1     Fee - $1100",
-      GROUP_MENTORSHIP: "Group Mentorship Fee - $250",
-    };
-
     // Input validation
-    if (!channelId || !MENTORSHIP_CHANNEL_ID || !googleDriveLink || !ADMIN_ID) {
+    if (!channelId || !MENTORSHIP_CHANNEL_ID || !googleDriveLink || !ADMIN_ID || !BOOTCAMP_CHANNEL_ID) {
       await ctx.reply(
         "🤦‍♂️ Configuration error! \n\n<i>Possible reasons:</i>\n\n1. Environment variables not set\n2. Technical issues\n3. Network problems\n\n<i>Contact support for assistance.</i>\n\n<i>We're here to help! 👉</i>",
         { parse_mode: "HTML" }
@@ -517,20 +525,21 @@ exports.approveCallback = async (ctx, uniqueId) => {
       return;
     }
 
-    if (!paymentOption) {
+    if (!subscriptionType) {
       await ctx.answerCallbackQuery({
         callback_query_id: callbackQueryId,
-        text: `🤦‍♂️ Invalid payment option ${paymentOption}! \n\nPossible reasons:\n\n1. Technical issues\n2. Network connectivity problems\n3. Slow connection\n\nExpect another screenshot from user @${username} for retry.\n\nWe're here to help! 👉`,
+        text: `🤦‍♂️ Invalid payment option ${subscriptionType}! \n\nPossible reasons:\n\n1. Technical issues\n2. Network connectivity problems\n3. Slow connection\n\nExpect another screenshot from user @${username} for retry.\n\nWe're here to help! 👉`,
         parse_mode: "HTML",
         show_alert: true,
       });
       return;
     }
-
-    // Attempt to delete the original message
-
     // Generate the new invite link
-    async function getNewInviteLink(chatId) {
+    async function getNewInviteLink(chatId,option) {
+      if (!Object.values(ALLOWED_PAYMENT_OPTIONS).includes(option)) {
+          // console.log(`Invalid option: ${option}`);
+        return;
+      }
       try {
         const chat = await ctx.api.getChat(chatId);
         if (!chat) {
@@ -547,7 +556,7 @@ exports.approveCallback = async (ctx, uniqueId) => {
         const expireDateTimestamp = Math.floor(expirationDate.getTime() / 1000);
 
         const options = {
-          name: createUserInstance.subscription.type ?? "",
+          name: option ?? "",
           member_limit: 1,
           expire_date: expireDateTimestamp,
           creates_join_request: false,
@@ -568,23 +577,23 @@ exports.approveCallback = async (ctx, uniqueId) => {
         return null;
       }
     }
-
-    // Get invite links
-    const vipInviteLink = await getNewInviteLink(channelId);
-    const mentorshipInvite = await getNewInviteLink(MENTORSHIP_CHANNEL_ID);
-
     // Store user link
-    switch (paymentOption) {
-      case PAYMENT_OPTIONS.GROUP_MENTORSHIP:
-        createUserInstance.storeUserLink(
-          mentorshipInvite.invite_link,
-          mentorshipInvite.name
-        );
-        break;
-      default:
+    switch (subscriptionType) {
+      case ALLOWED_PAYMENT_OPTIONS.ONE_MONTH:
+      case ALLOWED_PAYMENT_OPTIONS.THREE_MONTHS:
+      case ALLOWED_PAYMENT_OPTIONS.SIX_MONTHS:
+      case ALLOWED_PAYMENT_OPTIONS.TWELVE_MONTHS:
+        const vipInviteLink = await getNewInviteLink(channelId,subscriptionType);
         createUserInstance.storeUserLink(
           vipInviteLink.invite_link,
           vipInviteLink.name
+        );
+        break;
+      case ALLOWED_PAYMENT_OPTIONS.MENTORSHIP_PRICE_LIST:
+        const mentorshipInvite = await getNewInviteLink(MENTORSHIP_CHANNEL_ID,subscriptionType);
+        createUserInstance.storeUserLink(
+          mentorshipInvite.invite_link,
+          mentorshipInvite.name
         );
         break;
     }
@@ -599,55 +608,59 @@ exports.approveCallback = async (ctx, uniqueId) => {
         subscription: userSubscription,
         inviteLink: userLink,
       };
-
-      const session = await mongoose.startSession();
-      try {
-        await session.withTransaction(async () => {
-          if (isActive) {
-            await retryApiCall(() =>
-              updateSubscriptionAndExpirationDate(userId, newSubscriptionType)
-            );
-          } else {
-            if (
-              userSubscription?.status === "pending" &&
-              userLink?.link &&
-              userLink?.name
-            ) {
-              await retryApiCall(() => UserInfo.updateUser(userId, updateData));
-            } else {
-              throw new Error(
-                "Invalid subscription status or incomplete invite link"
-              );
-            }
-          }
-        });
+    
+      let updated = true;
+    
+      if (userSubscription.type.includes("month")) {
+        const session = await mongoose.startSession();
         try {
-          const deletionResult =
-            await screenshotStorage.deleteAllScreenshotMessages(ctx, userId);
-          // console.log(`Deleted screenshot messages for user ${userId}:`, deletionResult);
-
-          if (deletionResult) {
-            await screenshotStorage.removeUser(userId);
-          }
-        } catch (error) {
-          await ctx.answerCallbackQuery({
-            callback_query_id: callbackQueryId,
-            text: " Error deleting message!",
-            show_alert: true,
+          await session.withTransaction(async () => {
+            if (isActive) {
+              await retryApiCall(() =>
+                updateSubscriptionAndExpirationDate(userId, newSubscriptionType)
+              );
+            } else {
+              if (
+                userSubscription?.status === "pending" &&
+                userLink?.link &&
+                userLink?.name
+              ) {
+                await retryApiCall(() => UserInfo.updateUser(userId, updateData));
+              } else {
+                throw new Error(
+                  "Invalid subscription status or incomplete invite link"
+                );
+              }
+            }
           });
-          console.error(`Error deleting message for user ${userId}:`, error);
-          return;
+        } catch (error) {
+          updated = false;
+          // Log error and send notification
+          console.error(`Error updating user ${userId} data:`, error);
+          await handleUpdateError(error, updateData);
+        } finally {
+          await session.endSession();
         }
-
-        return true;
-      } catch (error) {
-        // Log error and send notification
-        console.error(`Error updating user ${userId} data:`, error);
-        await handleUpdateError(error, updateData);
-        return false;
-      } finally {
-        await session.endSession();
       }
+    
+      try {
+        const deletionResult =
+          await screenshotStorage.deleteAllScreenshotMessages(ctx, userId);
+        // console.log(`Deleted screenshot messages for user ${userId}:`, deletionResult);
+    
+        if (deletionResult) { 
+          await screenshotStorage.removeUser(userId);
+        }
+      } catch (error) {
+        await ctx.answerCallbackQuery({
+          callback_query_id: callbackQueryId,
+          text: " Error deleting message!",
+          show_alert: true,
+        });
+        console.error(`Error deleting message for user ${userId}:`, error);
+      }
+    
+      return updated;
     }
 
     async function handleUpdateError(error, updateData) {
@@ -700,133 +713,377 @@ exports.approveCallback = async (ctx, uniqueId) => {
         inviteLinkId.message_id
       );
     }
-
-    const updateSuccessful = await updateUserDataAndCleanUp();
-    if (updateSuccessful) {
-      let messageText;
-      let keyboard;
-      switch (paymentOption) {
-        case PAYMENT_OPTIONS.FUND_MANAGEMENT:
-          messageText = "Your fund management payment has been approved.";
-          keyboard = [
-            [
-              {
-                text: "Access Fund Management",
-                url: googleDriveLink,
-              },
-            ],
-            [
-              {
-                text: "Go Back to Menu",
-                callback_data: "mainmenu",
-              },
-            ],
-          ];
-          break;
-        case PAYMENT_OPTIONS.ONE_ON_ONE_MENTORSHIP:
-          messageText = "Welcome to 1 On 1 Mentorship with Greysuitfx"
-          keyboard = [
-            [
-              {
-                text: "DM Mr Grey",
-                url: googleDriveLink,
-              },
-            ],
-            [
-              {
-                text: "Go Back to Menu",
-                callback_data: "mainmenu",
-              },
-            ],
-          ];
-          break;
-        case PAYMENT_OPTIONS.GROUP_MENTORSHIP:
-          messageText =
-            "You're welcome to the Mentorship section. Please click the link below to join the channel.";
-          keyboard = [
-            [
-              {
-                text: "Join Mentorship",
-                url: mentorshipInvite?.invite_link,
-              },
-              {
-                text: "Go Back to Menu",
-                callback_data: "mainmenu",
-              },
-            ],
-          ];
-          break;
-        default:
-          const expiredKeyboard = [
-            [
-              {
-                text: "Activate Subscription",
-                url: vipInviteLink?.invite_link,
-              },
-              {
-                text: "Contact Support",
-                callback_data: "contact_support",
-              },
-            ],
-          ];
-
-          const activeKeyboard = [
-            [
-              {
-                text: "Check Subscription Status",
-                callback_data: "check_subscription_status",
-              },
-            ],
-          ];
-
-          const vipChannelKeyboard = [
-            [
-              {
-                text: "Join VIP Channel",
-                url: vipInviteLink?.invite_link,
-              },
-              {
-                text: "Go Back to Menu",
-                callback_data: "mainmenu",
-              },
-            ],
-          ];
-
-          if (isActive) {
-            messageText =
-              "Your subscription has been renewed.\nWelcome to Greysuitfx VIP Signal Channel.";
-            keyboard = activeKeyboard;
-          } else if (isExpired) {
-            messageText =
-              "Your subscription has been renewed.\nWelcome to Greysuitfx VIP Signal Channel.";
-            keyboard = expiredKeyboard;
-          } else {
-            messageText =
-              "Congrats! Your payment has been approved.\nWelcome to Greysuitfx VIP Signal Channel.";
-            keyboard = vipChannelKeyboard;
+   
+    const packageHandler = {
+    
+      Generic: async (...params) => {
+        try {
+          const [ctx, userId, subscriptionType,,,,googleDriveLink,isActive, isExpired] = params;
+          const updateSuccessful = await updateUserDataAndCleanUp();
+          if (!updateSuccessful) {
+            throw new Error("Update was not successful");
           }
-          break;
-      }
-      await sendMessage(userId, messageText, keyboard);
-
-      await ctx.answerCallbackQuery({
-        callback_query_id: callbackQueryId,
-        text: "Payment approved!",
-        show_alert: true,
-      });
-      //  createUserInstance.resetUserInfo(); // Reset user info on success
-      await catchMechanismClassInstance.removeUserManagementAndScreenshotStorage(
-        userId
-      );
+          const invite_link = createUserInstance.getUserLink()
+          let messageText;
+          let keyboard;
+          switch (subscriptionType) {
+            case PAYMENT_OPTIONS.FUND_MANAGEMENT:
+              messageText = "Your fund management payment has been approved.";
+              keyboard = [
+                [
+                  {
+                    text: "Access Fund Management",
+                    url: googleDriveLink,
+                  },
+                ],
+                [
+                  {
+                    text: "Go Back to Menu",
+                    callback_data: "mainmenu",
+                  },
+                ],
+              ];
+              break;
+            case PAYMENT_OPTIONS.ONE_ON_ONE_PRICE_LIST:
+              messageText = "Welcome to 1 On 1 Mentorship with Greysuitfx"
+              keyboard = [
+                [
+                  {
+                    text: "DM Mr Grey",
+                    url: googleDriveLink,
+                  },
+                ],
+                [
+                  {
+                    text: "Go Back to Menu",
+                    callback_data: "mainmenu",
+                  },
+                ],
+              ];
+              break;
+            case PAYMENT_OPTIONS.MENTORSHIP_PRICE_LIST:
+              messageText =
+                "You're welcome to the Mentorship section. Please click the link below to join the channel.";
+              keyboard = [
+                [
+                  {
+                    text: "Join Mentorship",
+                    url: invite_link?.link,
+                  },
+                  {
+                    text: "Go Back to Menu",
+                    callback_data: "mainmenu",
+                  },
+                ],
+              ];
+              break;
+            default:
+              const expiredKeyboard = [
+                [
+                  {
+                    text: "Renew Subscription",
+                    url: invite_link?.link,
+                  },
+                ],
+                [
+                  {
+                    text: "Go Back to Menu",
+                    callback_data: "mainmenu",
+                  },
+                ],
+              ];
+      
+              const activeKeyboard = [
+                [
+                  {
+                    text: "Check Subscription Status",
+                    callback_data: "check_subscription_status",
+                  },
+                ],
+              ];
+      
+              const vipChannelKeyboard = [
+                [
+                  {
+                    text: "Join VIP Channel",
+                    url: invite_link?.link,
+                  },
+                  {
+                    text: "Go Back to Menu",
+                    callback_data: "mainmenu",
+                  },
+                ],
+              ];
+      
+              if (isActive) {
+                messageText =
+                  "Your subscription has been upgraded.\nYou can check your Subcription status for Comfirmation.";
+                keyboard = activeKeyboard;
+              } else if (isExpired) {
+                messageText =
+                  "Your subscription has been renewed.\nWelcome to Greysuitfx VIP Signal Channel.";
+                keyboard = expiredKeyboard;
+              } else {
+                messageText =
+                  "Congrats! Your payment has been approved.\nWelcome to Greysuitfx VIP Signal Channel.";
+                keyboard = vipChannelKeyboard;
+              }
+              break;
+          }
+          await sendMessage(userId, messageText, keyboard);
+      
+          await ctx.answerCallbackQuery({
+            callback_query_id: callbackQueryId,
+            text: "Payment approved!",
+            show_alert: true,
+          });
+          //  createUserInstance.resetUserInfo(); // Reset user info on success
+          await catchMechanismClassInstance.removeUserManagementAndScreenshotStorage(
+            userId
+          );
+        } catch (error) {
+          console.error("Error occurred:", error);
+          await ctx.answerCallbackQuery({
+            callback_query_id: callbackQueryId,
+            text: "An error occurred. Please try again later.",
+            show_alert: true,
+          });
+        }
+      },
+    
+      Gift: async (...params) => {
+        try {
+          const [ctx, userId, subscriptionType, MENTORSHIP_CHANNEL_ID, channelId,,googleDriveLink] = params;
+          const updateSuccessful = await updateUserDataAndCleanUp();
+          let vipInviteLink, mentorshipInvite,messageText,keyboard;
+      
+          let hasMonth = false;
+          let hasOneOnOne = false;
+          let hasMentorshipPrice = false;
+      
+          if (!updateSuccessful) {
+            throw new Error("Update was not successful");
+          }
+      
+          const couponCode = await couponInstance.getCouponCodeText(userId);
+          const couponSelectedOptions = (await couponInstance.getCouponCode(couponCode)).options;
+        
+          couponSelectedOptions.forEach((option) => {
+            if (option.callback_data.includes('month')) hasMonth = true;
+            if (option.callback_data === 'one_on_one_price_list') hasOneOnOne = true;
+            if (option.callback_data === 'mentorship_price_list') hasMentorshipPrice = true;
+          });
+      
+          if (hasMonth && hasOneOnOne && hasMentorshipPrice) {
+            mentorshipInvite = await getNewInviteLink(MENTORSHIP_CHANNEL_ID, 'mentorship_price_list');
+            vipInviteLink = await getNewInviteLink(channelId, subscriptionType);
+      
+            messageText = "Congratulations! You've received a gift subscription.";
+            keyboard = [
+              [
+                {
+                  text: "Mentorship Group",
+                  url: mentorshipInvite?.invite_link,
+                },
+              ],
+              [
+                {
+                  text: "One-on-One Mentorship",
+                  url: googleDriveLink,
+                }
+              ],
+              [
+                {
+                  text: "VIP Link",
+                  url: vipInviteLink?.invite_link,
+                }
+              ],
+              [
+                {
+                  text: "Go Back to Menu",
+                  callback_data: "mainmenu",
+                },
+              ],
+            ];
+          } else if (hasMonth && hasOneOnOne) {
+            vipInviteLink = await getNewInviteLink(channelId, subscriptionType);
+      
+            messageText = "Congratulations! You've received a gift subscription.";
+            keyboard = [
+              [
+                {
+                  text: "One-on-One Mentorship",
+                  url: googleDriveLink,
+                }
+              ],
+              [
+                {
+                  text: "VIP Link",
+                  url: vipInviteLink?.invite_link,
+                }
+              ],
+              [
+                {
+                  text: "Go Back to Menu",
+                  callback_data: "mainmenu",
+                },
+              ],
+            ];
+          } else if (hasMonth && hasMentorshipPrice) {
+            mentorshipInvite = await getNewInviteLink(MENTORSHIP_CHANNEL_ID, 'mentorship_price_list');
+            vipInviteLink = await getNewInviteLink(channelId, subscriptionType);
+      
+            messageText = "Congratulations! You've received a gift subscription.";
+            keyboard = [
+              [
+                {
+                  text: "Mentorship Group",
+                  url: mentorshipInvite?.invite_link,
+                }
+              ],
+              [
+                {
+                  text: "VIP Link",
+                  url: vipInviteLink?.invite_link,
+                }
+              ],
+              [
+                {
+                  text: "Go Back to Menu",
+                  callback_data: "mainmenu",
+                },
+              ],
+            ];
+          } else if (hasOneOnOne && hasMentorshipPrice) {
+            mentorshipInvite = await getNewInviteLink(MENTORSHIP_CHANNEL_ID, 'mentorship_price_list');
+      
+            messageText = "Congratulations! You've received a gift subscription.";
+            keyboard = [
+              [
+                {
+                  text: "Mentorship Group",
+                  url: mentorshipInvite?.invite_link,
+                }
+              ],
+              [
+                {
+                  text: "One-on-One Mentorship",
+                  url: googleDriveLink,
+                }
+              ],
+              [
+                {
+                  text: "Go Back to Menu",
+                  callback_data: "mainmenu",
+                },
+              ],
+            ];
+          } else if (hasMonth) {
+            vipInviteLink = await getNewInviteLink(channelId, subscriptionType);
+            messageText = "Congratulations! You've received a gift subscription.";
+            keyboard = [
+              [
+                {
+                  text: "VIP Link",
+                  url: vipInviteLink?.invite_link,
+                },
+                {
+                  text: "Go Back to Menu",
+                  callback_data: "mainmenu",
+                },
+              ],
+            ];
+          } else if (hasOneOnOne) {
+            messageText = "Congratulations! You've received a gift subscription.";
+            keyboard = [
+              [
+                {
+                  text: "One-on-One Mentorship",
+                  url: googleDriveLink,
+                },
+              ],
+              [
+                {
+                  text: "Go Back to Menu",
+                  callback_data: "mainmenu",
+                },
+              ],
+            ];
+          } else if (hasMentorshipPrice) {
+            mentorshipInvite = await getNewInviteLink(MENTORSHIP_CHANNEL_ID, 'mentorship_price_list');
+      
+            messageText = "Congratulations! You've received a gift subscription.";
+            keyboard = [
+              [
+                {
+                  text: "Mentorship Group",
+                  url: mentorshipInvite?.invite_link,
+                },
+              ],
+              [
+                {
+                  text: "Go Back to Menu",
+                  callback_data: "mainmenu",
+                },
+              ],
+            ];
+          }
+      
+          await sendMessage(userId, messageText, keyboard);
+      
+          await ctx.answerCallbackQuery({
+            callback_query_id: callbackQueryId,
+            text: "Payment approved!",
+            show_alert: true,
+          });
+      
+          await catchMechanismClassInstance.removeUserManagementAndScreenshotStorage(userId);
+        } catch (error) {
+          console.error("Error occurred:", error);
+          await ctx.answerCallbackQuery({
+            callback_query_id: callbackQueryId,
+            text: "An error occurred. Please try again later.",
+            show_alert: true,
+          });
+        }
+      },
+    
+      BootCamp: async (...params) => {
+        const BOOTCAMP_CHANNEL_ID = params[4]
+        const bootcamp_link = await getNewInviteLink(BOOTCAMP_CHANNEL_ID,"bootcamp_payment");
+        const messageText = "Welcome to BootCamp!";
+        const keyboard = [
+          [
+            {
+              text: "Start BootCamp",
+              url: bootcamp_link?.invite_link,
+            },
+          ],
+          [
+            {
+              text: "Go Back to Menu",
+              callback_data: "mainmenu",
+            },
+          ],
+        ];
+        await sendMessage(userId, messageText, keyboard);
+        await ctx.answerCallbackQuery({
+          callback_query_id: callbackQueryId,
+          text: "Payment approved!",
+          show_alert: true,
+        });
+    
+        await catchMechanismClassInstance.removeUserManagementAndScreenshotStorage(userId);
+      },
+    };
+    
+    // Usage
+    const params = [ctx, userId, subscriptionType,MENTORSHIP_CHANNEL_ID,channelId,BOOTCAMP_CHANNEL_ID,googleDriveLink, isActive, isExpired];
+    const handlePackage = packageHandler[package];
+    if (handlePackage) {
+      await handlePackage(...params);
     } else {
-      await ctx.answerCallbackQuery({
-        callback_query_id: callbackQueryId,
-        text: `${
-          username ?? "User"
-        } info not completed a message has been sent to them to resend the screenshot again.`,
-        parse_mode: "HTML",
-        show_alert: true,
-      });
+      console.error(`Unknown package type: ${packageType}`);
     }
   } catch (error) {
     let errorMessage = "";
@@ -844,9 +1101,6 @@ exports.approveCallback = async (ctx, uniqueId) => {
     } else {
       errorMessage = `An unexpected error occurred: ${error.message}`;
     }
-
-    // Trim error message
-    // errorMessage = errorMessage.substring(0, 197) + "...";
 
     ctx.answerCallbackQuery({
       callback_query_id: ctx.update.callback_query.id,
@@ -909,6 +1163,58 @@ exports.appealCallback = async (ctx, userId, action, messageIdCount) => {
     sendError(ctx, `Error in appealCallback: ${error.message}`);
   }
 };
+exports.cancleCallback = async (ctx,userId,action) => {
+
+  try{
+   
+    if(action == "cancel"){
+      const couponCode = await couponInstance.getCouponCodeText(userId)
+      const userStorage = await screenshotStorage.getUserStorage(userId);
+    
+      if(!userStorage){
+        await catchMechanismClassInstance.initialize();
+      }
+      const screenshotData = await screenshotStorage.getScreenshot(userId);
+      const username = screenshotData.username;
+      const caption = `<i>Hello! ${username} your gift has been cancled. Please contact support for further Clearification</i>`   
+      if (!screenshotData) {
+        return sendError(ctx, "Screenshot data not found.");
+      }
+      const replyCancel = await ctx.reply(
+        `<i>Message canceled successfull</i>`,
+        { parse_mode: "HTML" }
+      );
+      await ctx.api.sendMessage(userId,caption, {
+        reply_markup: { inline_keyboard: [
+          [
+            {text:"Contact Support",url:process.env.CONTACT_SUPPORT},
+            {text:"Go Back",callback_data:"mainmenu"}
+          ]
+        ] },
+        parse_mode: "HTML",
+      })
+      setTimeout(async () => {
+        await screenshotStorage.deleteAllScreenshotMessages(ctx, userId);
+      }, 1000);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await ctx.api.deleteMessage(replyCancel.chat.id, replyCancel.message_id);
+      await couponInstance.deleteCoupon(couponCode)
+    }else{
+      const navigation = nav()
+      const messageId = ctx.update.callback_query.message.message_id;
+      const userId  = ctx.update.callback_query.from.id
+      await ctx.api.deleteMessage(userId, messageId);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await navigation.goBack(ctx);
+    }
+   
+
+  }catch(error){
+    console.error(`Error in cancelCallback: ${error.message}`);
+    sendError(ctx, `Error in cancelCallback: ${error.message}`);
+  }
+ 
+}
 async function sendError(ctx, text) {
   if (!ctx.update || !ctx.update.callback_query) {
     console.error("Missing callback query or update context");
@@ -929,4 +1235,4 @@ async function sendError(ctx, text) {
     console.error("Error sending error message:", error);
     // Optional: Send error report to administrator
   }
-}
+} 

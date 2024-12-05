@@ -3,9 +3,15 @@ const fs = require("fs");
 const path = require("path");
 const { Greybot } = require("../bots");
 const ADMIN_ID = process.env.ADMIN_ID;
+const skipUpdateOptions = [
+  "one_on_one_price_list",
+  "mentorship_price_list",
+  "$10,000 - $49,000",
+  "$50,000 - $1 million",
+  "bootcamp_payment"
+];
 class UserInfo {
-
-  static allUsers = []; // Store all instances 
+  static allUsers = []; // Store all instances
 
   static defaultValues = {
     userId: null,
@@ -47,22 +53,21 @@ class UserInfo {
   }
 
   async addMultipleUsers(usersData) {
-    
-  if (!Array.isArray(usersData)) {
-      throw new Error('Invalid users data');
+    if (!Array.isArray(usersData)) {
+      throw new Error("Invalid users data");
     }
     try {
-      for (const userData of usersData) { 
-         this.updateData(userData);
+      for (const userData of usersData) {
+        this.updateData(userData);
       }
-    } catch (error) { 
+    } catch (error) {
       console.error(`Error adding users: ${error.message}`);
       throw error;
     }
   }
-  
+
   static getAllUsersData() {
-    return UserInfo.allUsers; 
+    return UserInfo.allUsers;
   }
 
   static getUserById(userId) {
@@ -71,7 +76,11 @@ class UserInfo {
     }
     return UserInfo.allUsers.find((user) => user.userId === userId);
   }
-
+  setUserProperties(userId, username, ctx) {
+    this.userId = userId;
+    this.username = username;
+    this.fullName = `${ctx.from?.first_name} ${ctx.from?.last_name}`;
+  }
   // resetUserInfo() {
   //   Object.assign(this, UserInfo.defaultValues);
   // }
@@ -106,18 +115,19 @@ class UserInfo {
     this.userId = userId || this.userId;
     this.username = username || this.username;
     this.fullName = fullName || this.fullName;
-  
+
     this.subscription = {
       type: subscription.type || this.subscription.type,
-      expirationDate: subscription.expirationDate || this.subscription.expirationDate,
+      expirationDate:
+        subscription.expirationDate || this.subscription.expirationDate,
       status: subscription.status || this.subscription.status,
     };
-  
+
     this.inviteLink = {
       link: inviteLink.link || this.inviteLink.link,
       name: inviteLink.name || this.inviteLink.name,
     };
-  
+
     this.groupMembership = {
       joinedAt: groupMembership.joinedAt || this.groupMembership.joinedAt,
       groupId: groupMembership.groupId || this.groupMembership.groupId,
@@ -125,9 +135,9 @@ class UserInfo {
   }
 
   setExpirationDate(expirationDate) {
-    this.subscription.expirationDate = expirationDate; 
+    this.subscription.expirationDate = expirationDate;
   }
-  subscriptionStatus(status){
+  subscriptionStatus(status) {
     this.subscription.status = status;
   }
 
@@ -144,11 +154,11 @@ class UserInfo {
     this.inviteLink.name = name;
   }
 
-  getUserLink(){
-    return this.inviteLink
+  getUserLink() {
+    return this.inviteLink;
   }
-  getUserSubscription(){
-    return this.subscription
+  getUserSubscription() {
+    return this.subscription;
   }
 
   leaveGroup() {
@@ -160,16 +170,22 @@ class UserInfo {
     try {
       // Check user status before updating
       const existingUser = await User.findOne({ userId: this.userId });
-      if (existingUser && existingUser.subscription.status === "active") {
-          this.subscription.status = "active"
-          console.log("User status is active, skipping database update.");
+      // Check if user has selected an option that shouldn't update the database
+      if (skipUpdateOptions.includes(this.subscription.type)) {
         return; // Exit function without updating
-      }else if (existingUser && existingUser.subscription.status === "expired") {
-        this.subscription.status = "expired"
+      }
+      if (existingUser && existingUser.subscription.status === "active") {
+        this.subscription.status = "active";
+        console.log("User status is active, skipping database update.");
+        return; // Exit function without updating
+      } else if (
+        existingUser &&
+        existingUser.subscription.status === "expired"
+      ) {
+        this.subscription.status = "expired";
         console.log("User status is expired, skipping database update.");
-      return; // Exit function without updating
-    }
-  
+        return; // Exit function without updating
+      }
       const userData = {
         userId: this.userId,
         username: this.username,
@@ -178,8 +194,7 @@ class UserInfo {
         inviteLink: this.inviteLink,
         groupMembership: this.groupMembership,
       };
-     
-  
+
       await User.findOneAndUpdate(
         { userId: this.userId },
         { $set: userData },
@@ -187,7 +202,7 @@ class UserInfo {
       );
     } catch (error) {
       // console.error("Error saving user to DB:", error);
-  
+
       // Send error notification to admin via Telegram bot
       const systemInfo = `
         Error Message: Failed to update user info
@@ -223,7 +238,6 @@ class UserInfo {
       }
     });
   }
-  
 
   static getAllUsers() {
     return User.find()
@@ -289,7 +303,7 @@ class UserInfo {
         // Otherwise, mark this fullName as seen
         fullNameCountMap[fullName] = true;
       }
-    }); 
+    });
 
     // Log or return the list of duplicate users
     if (duplicates.length > 0) {
@@ -304,8 +318,8 @@ class UserInfo {
   static async updateUser(userId, updateData) {
     try {
       const user = await User.findOneAndUpdate(
-        { userId }, 
-        { $set: updateData}, 
+        { userId },
+        { $set: updateData },
         { new: true, upsert: true }
       );
       // console.log(user, "final update");
@@ -318,9 +332,11 @@ class UserInfo {
 
   async getUserManagementData(userId) {
     if (this.userId !== userId) {
-      throw new Error(`User ID mismatch: Expected ${this.userId} but received ${userId}`);
+      throw new Error(
+        `User ID mismatch: Expected ${this.userId} but received ${userId}`
+      );
     }
-  
+
     return {
       userId: this.userId,
       username: this.username,

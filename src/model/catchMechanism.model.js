@@ -53,6 +53,7 @@ const catchMechanismSchema = new Schema({
           photoIds: [Number],
           messageIds: [Number],
           messageIdCount: Number,
+          package: String,
           channelMessageIds: [Number],
           paymentMessageIds: [Number],
         },

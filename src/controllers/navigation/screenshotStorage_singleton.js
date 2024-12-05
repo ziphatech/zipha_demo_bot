@@ -1,8 +1,9 @@
+
+
 class ScreenshotStorage {
   constructor() {
     this.storage = new Map(); 
   }
-
   async addUser(userId, username) {
     const id = String(userId);
     if (!this.storage.has(id)) {
@@ -18,13 +19,12 @@ class ScreenshotStorage {
       };
       this.storage.set(id, user);
     }
-    console.log(`User ${username} created`)
+    // console.log(`User ${username} created`)
     return this.storage.get(id);
   }
-  async addScreenshot(userId, screenshotData) {
+  async addScreenshot(userId, screenshotData,packageType= "Generic") {
     const id = String(userId);
     const { photoId, messageId, username } = screenshotData;
-  
     let userStorage = this.storage.get(id);
   
     if (!userStorage) {
@@ -45,6 +45,7 @@ class ScreenshotStorage {
         messageIdCount: 1, // Initialize messageIdCount
         channelMessageIds: [],
         paymentMessageIds: [],
+        package:packageType,
         username,
       });
     } else {
@@ -299,25 +300,32 @@ class ScreenshotStorage {
     this.storage.delete(id);
     console.log("User removed from stack")
   }
-  async updateSubscriptionStatus(userId, subscriptionStatus) {
+  async updateSubscriptionStatus(userId, subscriptionStatus) {  
     const id = String(userId);
     const userStorage = this.storage.get(id);
+  
     switch (subscriptionStatus) {
-      case subscriptionStatus.EXPIRED:
-        userStorage.isExpired = true;
-        userStorage.isActive = false;
-        break;
-      case subscriptionStatus.ACTIVE:
+      case 'active':
         userStorage.isActive = true;
         userStorage.isExpired = false;
+        // console.log(userStorage.isExpired,userStorage.isActive,"isExpired,isActive")
         break;
-      case subscriptionStatus.INACTIVE:
+      case 'expired':
+        userStorage.isExpired = true;
+        userStorage.isActive = false;
+        // console.log(userStorage.isExpired,userStorage.isActive,"isExpired,isActive")
+        break;
+      case 'inactive':
         userStorage.isActive = false;
         userStorage.isExpired = false;
+        // console.log(userStorage.isExpired,userStorage.isActive,"isExpired,isActive")
         break;
       default:
         return;
     }
+  
+    // Save the updated user storage
+    this.storage.set(id, userStorage);
   }
   async setPaymentOption(userId, value) {
     const id = String(userId);

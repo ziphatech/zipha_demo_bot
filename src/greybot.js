@@ -18,6 +18,7 @@ const {
 } = require("./controllers/callback_handlers/checkSubscriptionStatus");
 const Broadcast = require("./controllers/navigation/broadcast_singleton");   
 const { UserInfo } = require("./model/userManagementClass"); 
+const { handlePollAnswer } = require("./controllers/callback_handlers/handlePollAnswer");
 const channelId = process.env.VIP_SIGNAL_ID
 
 exports.GreyBotHandler = async () => { 
@@ -34,7 +35,8 @@ exports.GreyBotHandler = async () => {
   }); 
   Greybot.on("message", (ctx) => handleMessages(ctx, broadcast));
   Greybot.on("channel_post", handleChannelPost);
-  Greybot.on("callback_query:data", menuOptionsCallback);  
+  Greybot.on("callback_query:data", menuOptionsCallback); 
+  Greybot.on('poll_answer', handlePollAnswer); 
  
  
   // schedule.scheduleJob('*/1 * * * *', async () => {

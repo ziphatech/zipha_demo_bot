@@ -1,29 +1,15 @@
 
  
-const mainMenuOptions = [
-  [{ text: "Vip Signal", callback_data: "vip_signal" }],
-  [{ text: "Mentorship ( Coming Soon )", callback_data: "mentorship1" }],
-  [{ text: "Fund Management", callback_data: "fund_management" }],
-  [{ text: "Partnership", callback_data: "partnership" }],
-  [{ text: "FAQ", callback_data: "faq" }],
-  [{ text: "Contact Support", url: process.env.CONTACT_SUPPORT }],
-  // New settings button with conditional visibility
-  // userId === specificUserId ? [{ text: "Settings", callback_data: "settings" }] : [],
-]; 
-const menuWithSettingOption = [
-  [{ text: "Vip Signal", callback_data: "vip_signal" }],
-  [{ text: "Mentorship ( Coming Soon )", callback_data: "mentorship1" }],
-  [{ text: "Fund Management", callback_data: "fund_management" }],
-  [{ text: "Partnership", callback_data: "partnership" }],
-  [{ text: "FAQ", callback_data: "faq" }],
-  [{ text: "Contact Support", url: process.env.CONTACT_SUPPORT }],
-  // New settings button with conditional visibility
-  [{ text: "Settings", callback_data: "settings" }],
-]; 
+const bootCampBtn = [
+  [
+    { text:"Pay Fee: $79.99",callback_data:"bootcamp_payment"}
+  ]
+]
 const settingsOptions = [
   [{ text: "Naira Price", callback_data: "nairaPrice" }],
   [{ text: "Vip Price (Discount Price)", callback_data: "vipDiscountPrice" }],
   [{ text: "Vip price (Update Price)", callback_data: "vipPrice" }],
+  [{ text: "Generate Coupon", callback_data:"generate_coupon"}],
   [
     { text: "Go Back", callback_data: "goback" },
     { text: "Main Menu", callback_data: "mainmenu" },
@@ -68,6 +54,25 @@ const vipSignalOptions = (data) => {
     ],
   ];
 };
+
+const generateMenu = (adminUserId,userId)=> {
+  
+  const mainMenuOptions = [
+    [{ text: "Vip Signal", callback_data: "vip_signal" }],
+    [{ text: "Mentorship ( Coming Soon )", callback_data: "mentorship1" }],
+    [{ text: "Fund Management", callback_data: "fund_management" }],
+    [{ text: "3 Days BootCamp", callback_data: "bootcamp" }],
+    [{ text: "Partnership", callback_data: "partnership" }],
+    [{ text: "Gift Coupon", callback_data: "gift_coupon" }],
+    [{ text: "FAQ", callback_data: "faq" }],
+    [{ text: "Contact Support", url: process.env.CONTACT_SUPPORT }],
+  ];
+
+  if (userId === adminUserId) {
+    mainMenuOptions.push([{ text: "Settings", callback_data: "settings" }]);
+  }
+  return mainMenuOptions;
+}
 const vipPrice = [
   [
     { text: "1 Month", callback_data: "oneMonth" },
@@ -185,7 +190,6 @@ const  fundManagementOption = [
 
 
 module.exports = {
-  mainMenuOptions,
   vipSignalOptions,
   paymentMethod,
   mentorshipOption,
@@ -196,8 +200,9 @@ module.exports = {
   fundManagementTermsOne,
   fundManagementTermsTwo,
   fundManagementOptionDocs,
-  menuWithSettingOption ,
   settingsOptions,
   vipSignalDiscount,
-  vipPrice
+  vipPrice,
+  bootCampBtn,
+  generateMenu
 };

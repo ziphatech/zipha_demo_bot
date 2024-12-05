@@ -91,11 +91,11 @@ ${appealMessage}
   `;
 
       try {
-        // Send photo and delete original message
-        await sendPhotoAndDeleteOriginal(ctx, userId, photoId, caption,broadcast,channelId);
-
-        // Handle appeal action
-        if (action === "appeal" && originalMessageId) {
+        
+      // Handle appeal action
+      if (action === "appeal" && originalMessageId) {
+          // Send photo and delete original message
+          await sendPhotoAndDeleteOriginal(ctx, userId, photoId, caption,broadcast,channelId);
           setTimeout(async () => {
             await screenshotStorage.deleteAllScreenshotMessages(ctx, userId);
             resetBroadcast();
@@ -114,7 +114,9 @@ ${appealMessage}
   }
 }
 async function sendPhotoAndDeleteOriginal(ctx, userId, photoId, caption,broadcast,channelId) {
-  await ctx.api.sendPhoto(userId, photoId, { caption, parse_mode: "HTML" });
+  if(photoId){
+    await ctx.api.sendPhoto(userId, photoId, { caption, parse_mode: "HTML" });
+  }
   await ctx.api.deleteMessage(broadcast.message.chat.id, broadcast.messageId);
 
   // Delete appeal message after 1 second

@@ -35,7 +35,10 @@ class Navigation {
     previousMenuMessageId.set(previousMenu, this.menuMessageId); // Set the message ID in the map
 
     if (callback && typeof callback === "function") {
-      callback(ctx,option || null);
+      const result = callback(ctx, option || null);
+      if (result && typeof result.then === "function") {
+        await result;
+      }
     }
     //const menu = await this.getUniqueUserData();
     // console.log(menu, "Users menu Options");
@@ -50,10 +53,17 @@ class Navigation {
       const Option = userMenuOptions.stack[userMenuOptions.stack.length - 2];
       const previousMenuMessageId =
         userMenuOptions.previousMenuMessageId.get(previousOption);
-      
       if (previousMenuMessageId) {
-        await ctx.api.deleteMessage(userId, previousMenuMessageId);
-        userMenuOptions.previousMenuMessageId.delete(previousMenuMessageId);
+        try {
+          await ctx.api.deleteMessage(userId, previousMenuMessageId);
+          userMenuOptions.previousMenuMessageId.delete(previousMenuMessageId);
+        } catch (error) {
+          if (error.code === 400 && error.description === "Message to delete not found") {
+            console.log("Message has already been deleted");
+          } else {
+            console.error("Error deleting message:");
+          }
+        }
       }
 
       if (userMenuOptions.stack.length > 1) {
@@ -63,7 +73,7 @@ class Navigation {
         userMenuOptions.stack = []; // Empty the stack
         await this.updateMenu(ctx, "Main Menu");
       } else {
-        ctx.reply("Cannot go back further.");
+        // ctx.reply("Cannot go back further.");
        await this.goToMainMenu(ctx)
       }
     }
@@ -216,7 +226,7 @@ class Navigation {
       }
       // Update the menu
       const messageText =
-        groupInfo[option] ?? `Welcome to the ${option} section!`;
+        groupInfo[option] ??  `<code>     </code><b>${option} section!</b><code>     </code>`;
       const keyboard = generateInlineKeyboard(getMenuOptions(option,userId));
       const replyMarkup = {
         inline_keyboard: keyboard,
@@ -251,9 +261,14 @@ class Navigation {
           "Foreign Payment",
           "Naira Payment",
           "FAQ",
-          "Check Subscription Status"
+          "Check Subscription Status",
+          "Ethereum Payment"
         ];
-
+        let qickMenuOptions = [
+          "Generate Coupon",
+          "Gift Coupon",
+          "Generate Code",
+        ]
         // Check if the selected option is in the menu options array
         if (MenuOptions.includes(option)) {
           // If it is, delete the message after 5 seconds
@@ -266,6 +281,8 @@ class Navigation {
               console.error("Error deleting reply message:");
             }
           }, 5000);
+        }else if(qickMenuOptions.includes(option)){
+          await ctx.api.deleteMessage(message?.chat.id, message.message_id);
         }
       }
       // Update the userMenuOptions Map

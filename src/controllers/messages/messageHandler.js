@@ -3,10 +3,12 @@ const { createUserInstance } = require("../../model/userInfo_singleton");
 const Broadcast = require("../navigation/broadcast_singleton");
 const nav = require("../navigation/navigation_singleton");
 const { settingsClass } = require("../navigation/settingsClass");
-const { retryApiCall } = require("../../utilities");
+const { retryApiCall, generateCaption } = require("../../utilities");
 const catchMechanismClass = require("../../config/catchMechanismClass");
 const catchMechanismClassInstance = catchMechanismClass.getInstance()
-
+const Coupon = require("../../model/couponClass");
+const { handleGiftCoupon } = require("../callback_handlers/handleSettings");
+const couponInstance = Coupon.getInstance()
 const paymentOptions = [
   "$10,000",
   "$50,000",
@@ -23,6 +25,7 @@ async function handleMessages(ctx) {
   const message = ctx?.message;
   const broadcast = Broadcast();
   const navigation = nav();
+
   broadcast.userId = ctx?.chat.id;
   navigation.uniqueUser = ctx?.chat.id;
   const settings = settingsClass();
@@ -52,15 +55,28 @@ async function handleMessages(ctx) {
     // Handle other text messages
     else if (message?.text) {
       const settingMessage = settings.settingMessage;
+      const CouponMessageSet = await couponInstance.getCouponMessageSet()
       const USER_ID = Number(process.env.USER_ID);
       if (settingMessage === true && ctx.chat?.id === USER_ID) {
         await retryApiCall(() => settings.getNewSettings(ctx));
+      }
+      if(CouponMessageSet === true){
+        // console.log(message.text,"code")
+        await retryApiCall(() =>  handleGiftCoupon(ctx));
+       
       }
     }
     // Handle photo messages
     else if (message.photo) {
       const userId = ctx.from?.id;
       const username = ctx.from?.username;
+
+      // Check if paymentType is set
+      const paymentOption = await screenshotStorage?.getPaymentOption(userId);
+      const paymentType = await screenshotStorage?.getPaymentType(userId);
+      const serviceOption = await screenshotStorage?.getServiceOption(userId);
+      const normalizedPaymentOption = paymentOption?.replace(/-.*/, "").trim();
+      const normalizedPaymentType = (paymentType || "").trim();
   
       // Verify user ID existence
       if (!userId) {
@@ -85,9 +101,7 @@ async function handleMessages(ctx) {
       }
 
       // Store user information before sending screenshot
-      createUserInstance.userId = userId;
-      createUserInstance.username = username;
-      createUserInstance.fullName = `${ctx.from?.first_name} ${ctx.from?.last_name}`;
+      createUserInstance.setUserProperties(userId, username, ctx);
       createUserInstance.subscriptionStatus("inactive");
 
       // Save user data to database
@@ -112,7 +126,8 @@ async function handleMessages(ctx) {
       };
       const userStorage = await screenshotStorage.addScreenshot(
         userId,
-        screenshotData
+        screenshotData,
+        serviceOption === "3 Days BootCamp" ? "BootCamp" : "Generic"
       );
 
       if (!userStorage) {
@@ -125,13 +140,6 @@ async function handleMessages(ctx) {
         return;
       }
 
-      // Check if paymentType is set
-      const paymentOption = await screenshotStorage?.getPaymentOption(userId);
-      const paymentType = await screenshotStorage?.getPaymentType(userId);
-      const serviceOption = await screenshotStorage?.getServiceOption(userId);
-      const normalizedPaymentOption = paymentOption?.replace(/-.*/, "").trim();
-      const normalizedPaymentType = (paymentType || "").trim();
-
       // Define valid payment options based on service option
       let validPaymentOptions;
       if (serviceOption === "Vip Signal") {
@@ -140,6 +148,8 @@ async function handleMessages(ctx) {
         );
       } else if (serviceOption === "Mentorship") {
         validPaymentOptions = ["Group Mentorship Fee", "1"];
+      } else if (serviceOption === "3 Days BootCamp") {
+        validPaymentOptions = ["Pay Fee: $79.99"];
       } else if (serviceOption === "Fund Management") {
         validPaymentOptions = paymentOptions.filter((option) =>
           option.includes("$10,000")
@@ -148,7 +158,7 @@ async function handleMessages(ctx) {
         await handleErrorMessage(
           ctx,
           message,
-          "Invalid service option selected. Please select VIP Signal, Mentorship, or Fund Management.",
+          "Invalid service option selected. Please select VIP Signal, Mentorship, Fund Management, or 3 Days Boot Camp.",
           5000
         );
         return;
@@ -178,6 +188,15 @@ async function handleMessages(ctx) {
             )}.`,
             5000
           );
+        } else if (serviceOption === "3 Days BootCamp") {
+          await handleErrorMessage(
+            ctx,
+            message,
+            `Please select a valid payment option for 3 Days Boot Camp: ${validPaymentOptions.join(
+              ", "
+            )}.`,
+            5000
+          );
         } else {
           await handleErrorMessage(
             ctx,
@@ -198,21 +217,7 @@ async function handleMessages(ctx) {
         );
         return;
       }
-
-      const fullName = `<code>${ctx.from?.last_name} ${ctx.from?.first_name}</code>`;
-      const userName = `<code>@${ctx.from?.username}</code>`;
-      const caption = `
-  <blockquote>
-  ${userName || fullName || "No User Name"}
-  
-  ${serviceOption ?? "No Service Package selected"}
-  
-  ${paymentOption ?? "No Payment Option selected"}
-  
-  ${paymentType ?? "No payment Type selected"}
-  </blockquote>
-  <i>Please verify or appeal this payment</i>
-  `;
+      const caption = generateCaption(ctx, serviceOption, paymentOption, paymentType);
       const channelId = process.env.APPROVAL_CHANNEL_ID;
       const messageIdCount = await screenshotStorage.getMessageIdCount(userId);
       const inlineKeyboard = [
@@ -251,7 +256,7 @@ async function handleMessages(ctx) {
       await catchMechanismClassInstance.addCatchMechanism(userId)    
     }
   } catch (error) {
-    await handleError(ctx, error);
+    await handleError(ctx, error); 
   }
 }
 async function handleErrorMessage(ctx, message, errorMessage, timeOut) {

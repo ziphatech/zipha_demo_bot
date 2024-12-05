@@ -232,8 +232,61 @@ async function updateSubscriptionAndExpirationDate(userId, newSubscriptionType) 
   // return { newSubscriptionType, newExpirationDate }; 
 }
 
+/**
+ * Generates a caption for payment verification.
+ *
+ * @param {Object} ctx - Telegram context object.
+ * @param {string} serviceOption - Selected service package.
+ * @param {string} paymentOption - Selected payment option.
+ * @param {string} paymentType - Selected payment type.
+ * @returns {string} Formatted caption.
+ */
+function generateCaption(ctx, serviceOption, paymentOption = null, paymentType = null, type = null) {
+  const fullName = `<code>${ctx.from?.last_name} ${ctx.from?.first_name}</code>`;
+  const userName = `<code>@${ctx.from?.username}</code>`;
+  const userIdentifier = userName || fullName || "No User Name";
+
+  const serviceInfo = serviceOption ?? "No Service Package selected";
+
+  let paymentInfo, paymentTypeInfo, appealText;
+
+  if (type === "Free") {
+    paymentTypeInfo = "Gift Free Package.";
+    appealText = "Please verify this Gift Package";
+    return `<blockquote>
+<strong>${userIdentifier}</strong> 
+ 
+<strong>${serviceInfo}</strong> 
+
+<strong>${paymentTypeInfo}</strong> 
+</blockquote>
+<i>${appealText}</i>
+  `;
+  } else {
+    paymentInfo = paymentOption ?? "No Payment Option selected";
+    paymentTypeInfo = paymentType ?? "No payment Type selected";
+    appealText = "Please approve or appeal this payment";
+
+    return `
+    <blockquote>
+      ${userIdentifier}
+      
+      ${serviceInfo}
+      
+      ${paymentInfo}
+      
+      ${paymentTypeInfo}
+    </blockquote>
+    <i>${appealText}</i>
+  `;
+  }
+
+ 
+}
+
 
 module.exports = {
+  generateCaption,
   convertToNGN,
   updateCurrencyExchange,
   retryApiCall,

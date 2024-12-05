@@ -2,7 +2,7 @@ const { Schema, model, models } = require("mongoose");
 
 const Settings = new Schema({
   userId: { type: Number, unique: true },
-  settings: {
+  settings: { 
     type: Object,
     properties: {
       language: { type: String, default: "en" },
@@ -26,7 +26,18 @@ const Settings = new Schema({
           oneYear: { type: Number, default: 400 },
         },
       },
-    },
+      codeGeneration: [{
+        couponId: String,
+        username:String,
+        options: [{
+          callback_data: String,
+          text: String
+        }],
+        redeemed: Boolean,
+        timestamps: Date,
+        couponCode: String,
+      }]
+    }
   },  
 });
 
