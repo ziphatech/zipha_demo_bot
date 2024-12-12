@@ -1,10 +1,10 @@
 const { default: mongoose } = require("mongoose");
-const { Greybot } = require("../../bots");
-const User = require("../../model/user.model");
-const { UserInfo } = require("../../model/userManagementClass");
-const { retryApiCall } = require("../../utilities");
+const { Greybot } = require("../../../../bots");
+const  User = require("../../../../model/user.model");
+const { UserInfo } = require("../../../../model/userManagementClass");
+const { retryApiCall } = require("../../../../utilities");
 const GREYBOT_ID = process.env.GREYBOT_ID;
-
+ 
 async function checkSubscription(channelId) {
   try {
     console.log(`Checking subscription status for channel ${channelId}...`);
@@ -18,7 +18,7 @@ async function checkSubscription(channelId) {
         },
       ])
     );
-    console.log(users, " users");
+    // console.log(users, " users");
     for (const user of users) {
       const expirationDate = user.subscription.expirationDate;
       const joinedAt = user.groupMembership.joinedAt.getTime();
@@ -417,6 +417,10 @@ async function getSubscriptionStatus(ctx) {
       if (subscriptionStatus === "inactive") {
         ctx.reply(
           `Hello ${username}, your subscription is currently inactive.`
+        );
+      } else if (subscriptionStatus === "lifetime") {
+        ctx.reply(
+          `Hello ${username}, you are a lifetime subscriber.`
         );
       } else if (subscriptionStatus === "left") {
         ctx.reply(

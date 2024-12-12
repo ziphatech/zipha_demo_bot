@@ -1,14 +1,12 @@
-const catchMechanismClass = require("../../config/catchMechanismClass");
-const User = require("../../model/user.model");
-const { createUserInstance } = require("../../model/userInfo_singleton");
-const { UserInfo } = require("../../model/userManagementClass");
-const { retryApiCall } = require("../../utilities");
-const nav = require("../navigation/navigation_singleton");
-const screenshotStorage = require("../navigation/screenshotStorage_singleton");
+const catchMechanismClass = require("../../../../config/catchMechanismClass");
+const User = require("../../../../model/user.model");
+const { UserInfo } = require("../../../../model/userManagementClass");
+const { retryApiCall } = require("../../../../utilities");
+const { Navigation } = require("../../../navigation/navigationClass");
+const screenshotStorage = require("../../../navigation/screenshotStorageClass");
 const vipChannelId = process.env.VIP_SIGNAL_ID;
 const catchMechanismClassInstance = catchMechanismClass.getInstance();
 
-// catchMechanismClass
 async function handleChatMember(ctx) {
   try {
     if (Number(ctx.update.chat_member.chat.id) !== Number(vipChannelId)) return;
@@ -30,7 +28,7 @@ async function handleChatMember(ctx) {
     const newMemberStatus = chatMemberUpdate.new_chat_member.status;
     const oldMemberStatus = chatMemberUpdate.old_chat_member.status;
     const inviteLink = chatMemberUpdate.invite_link?.invite_link;
-    const navigation = nav();
+    const navigation = Navigation.getInstance();
 
     if (!isBot) {
       const existingUser = await User.findOne({ userId });

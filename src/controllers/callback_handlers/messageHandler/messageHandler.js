@@ -1,14 +1,14 @@
-const screenshotStorage = require("../navigation/screenshotStorage_singleton");
-const { createUserInstance } = require("../../model/userInfo_singleton");
-const Broadcast = require("../navigation/broadcast_singleton");
-const nav = require("../navigation/navigation_singleton");
-const { settingsClass } = require("../navigation/settingsClass");
-const { retryApiCall, generateCaption } = require("../../utilities");
-const catchMechanismClass = require("../../config/catchMechanismClass");
-const catchMechanismClassInstance = catchMechanismClass.getInstance()
-const Coupon = require("../../model/couponClass");
-const { handleGiftCoupon } = require("../callback_handlers/handleSettings");
-const couponInstance = Coupon.getInstance()
+const catchMechanismClass = require("../../../config/catchMechanismClass");
+const Coupon = require("../../../model/couponClass");
+const { createUserInstance } = require("../../../model/userInfo_singleton");
+const { retryApiCall, generateCaption } = require("../../../utilities");
+const Broadcast = require("../../navigation/broadcast_singleton");
+const { Navigation } = require("../../navigation/navigationClass");
+const screenshotStorage = require("../../navigation/screenshotStorageClass");
+const { handleGiftCoupon } = require("../settings/handleGiftCoupon");
+const { settingsClass } = require("../settings/settingsClass");
+const couponInstance = Coupon.getInstance();
+const catchMechanismClassInstance = catchMechanismClass.getInstance();
 const paymentOptions = [
   "$10,000",
   "$50,000",
@@ -19,12 +19,19 @@ const paymentOptions = [
   "6 Months",
   "12 Months",
 ];
-const paymentTypes = ["USDT", "Naira Payment", "BTC", "Foreign Payment","Skrill Payment" ,"Ethereum Payment"];
+const paymentTypes = [
+  "USDT",
+  "Naira Payment",
+  "BTC",
+  "Foreign Payment",
+  "Skrill Payment",
+  "Ethereum Payment",
+];
 // Function to handle various types of messages
 async function handleMessages(ctx) {
   const message = ctx?.message;
   const broadcast = Broadcast();
-  const navigation = nav();
+  const navigation = Navigation.getInstance()
 
   broadcast.userId = ctx?.chat.id;
   navigation.uniqueUser = ctx?.chat.id;
@@ -35,7 +42,7 @@ async function handleMessages(ctx) {
     // Handle text messages containing "@"
     if (message?.text?.includes("@")) {
       const enteredUsername = message.text.replace("@", "");
-      
+
       if (ctx.update.callback_query) {
         await retryApiCall(() =>
           ctx.answerCallbackQuery({
@@ -55,15 +62,14 @@ async function handleMessages(ctx) {
     // Handle other text messages
     else if (message?.text) {
       const settingMessage = settings.settingMessage;
-      const CouponMessageSet = await couponInstance.getCouponMessageSet()
+      const CouponMessageSet = await couponInstance.getCouponMessageSet();
       const USER_ID = Number(process.env.USER_ID);
       if (settingMessage === true && ctx.chat?.id === USER_ID) {
         await retryApiCall(() => settings.getNewSettings(ctx));
       }
-      if(CouponMessageSet === true){
+      if (CouponMessageSet === true) {
         // console.log(message.text,"code")
-        await retryApiCall(() =>  handleGiftCoupon(ctx));
-       
+        await retryApiCall(() => handleGiftCoupon(ctx));
       }
     }
     // Handle photo messages
@@ -77,7 +83,7 @@ async function handleMessages(ctx) {
       const serviceOption = await screenshotStorage?.getServiceOption(userId);
       const normalizedPaymentOption = paymentOption?.replace(/-.*/, "").trim();
       const normalizedPaymentType = (paymentType || "").trim();
-  
+
       // Verify user ID existence
       if (!userId) {
         await handleErrorMessage(
@@ -217,12 +223,27 @@ async function handleMessages(ctx) {
         );
         return;
       }
-      const caption = generateCaption(ctx, serviceOption, paymentOption, paymentType);
+      const caption = generateCaption(
+        ctx,
+        serviceOption,
+        paymentOption,
+        paymentType
+      );
       const channelId = process.env.APPROVAL_CHANNEL_ID;
       const messageIdCount = await screenshotStorage.getMessageIdCount(userId);
       const inlineKeyboard = [
-        [{ text: "Approve", callback_data:  `approve_${userId}_${messageIdCount - 1}` }],
-        [{ text: "Appeal", callback_data: `appeal_${userId}_${messageIdCount - 1}` }],
+        [
+          {
+            text: "Approve",
+            callback_data: `approve_${userId}_${messageIdCount - 1}`,
+          },
+        ],
+        [
+          {
+            text: "Appeal",
+            callback_data: `appeal_${userId}_${messageIdCount - 1}`,
+          },
+        ],
       ];
 
       const responseChannel = await retryApiCall(() =>
@@ -253,10 +274,10 @@ async function handleMessages(ctx) {
         channelMessageId,
         paymentMessageId
       );
-      await catchMechanismClassInstance.addCatchMechanism(userId)    
+      await catchMechanismClassInstance.addCatchMechanism(userId);
     }
   } catch (error) {
-    await handleError(ctx, error); 
+    await handleError(ctx, error);
   }
 }
 async function handleErrorMessage(ctx, message, errorMessage, timeOut) {
@@ -300,7 +321,7 @@ async function handleError(ctx, error) {
     } else if (error.response && error.response.status === 400) {
       errorMessage = "Error with request. Try again!";
     } else if (error.message) {
-      errorMessage = "Something went wrong. Try again!"+error;
+      errorMessage = "Something went wrong. Try again!" + error;
     } else {
       errorMessage = "An unknown error occurred.";
       console.error("Unknown error:", error);

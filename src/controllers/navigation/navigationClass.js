@@ -2,23 +2,30 @@
 const { groupInfo } = require("../../menuInfo");
 const { generateInlineKeyboard } = require("./generateInlineKeyboard");
 const { getMenuOptions } = require("./getMenuOptions");
-const screenshotStorage = require("./screenshotStorage_singleton");
+const screenshotStorage = require("./screenshotStorageClass");
 let maintenanceInProgress = false;
 class Navigation {
   constructor() {
     this.userMenuOptions = new Map();
     this.menuMessageId = null;
     this.uniqueUser = null; // Initialize userId to null
-    this.nairaPrice = null
+    this.nairaPrice = null;
   }
+  static instance;
+  static getInstance() {
+    if (!Navigation.instance) {
+      Navigation.instance = new Navigation();
+      }
+      return Navigation.instance;  
+  }
+
 
   async navigate(ctx, option, callback = null) {
     const userId = ctx?.chat?.id; // Store the user ID
     let userMenuOptions = this.userMenuOptions.get(userId);
-    
 
     if (!this.userMenuOptions.has(userId)) {
-       // User not found in map, create a new entry
+      // User not found in map, create a new entry
       this.userMenuOptions.set(userId, {
         stack: [],
         previousMenuMessageId: new Map(), // Initialize previousMenuMessageId as a Map
@@ -58,7 +65,10 @@ class Navigation {
           await ctx.api.deleteMessage(userId, previousMenuMessageId);
           userMenuOptions.previousMenuMessageId.delete(previousMenuMessageId);
         } catch (error) {
-          if (error.code === 400 && error.description === "Message to delete not found") {
+          if (
+            error.code === 400 &&
+            error.description === "Message to delete not found"
+          ) {
             console.log("Message has already been deleted");
           } else {
             console.error("Error deleting message:");
@@ -74,14 +84,14 @@ class Navigation {
         await this.updateMenu(ctx, "Main Menu");
       } else {
         // ctx.reply("Cannot go back further.");
-       await this.goToMainMenu(ctx)
+        await this.goToMainMenu(ctx);
       }
     }
   }
   async goToMainMenu(ctx) {
     try {
       const userId = ctx?.from?.id;
-      const username = ctx.from?.username
+      const username = ctx.from?.username;
       let userMenuOptions = this.userMenuOptions.get(userId);
 
       if (!userMenuOptions) {
@@ -89,7 +99,7 @@ class Navigation {
           stack: [],
           previousMenuMessageId: new Map(),
           inviteLinkId: null,
-          faqIndex: 0 // Initialize faqIndex to 0
+          faqIndex: 0, // Initialize faqIndex to 0
         };
         this.userMenuOptions.set(userId, userMenuOptions);
       } else {
@@ -141,19 +151,18 @@ class Navigation {
                 return; // <--- Add return statement here
               } else {
                 // throw error;
-                console.log("Error deleting reply message:")
+                console.log("Error deleting reply message:");
               }
             }
           }
         }
       }
 
-      
       await screenshotStorage.resetScreenshotStorage(userId);
-      await screenshotStorage.addUser(userId,username)
-      await screenshotStorage.setServiceOption(userId, null)
-      await screenshotStorage.setPaymentOption(userId, null)
-      await screenshotStorage.setPaymentType(userId, null)
+      await screenshotStorage.addUser(userId, username);
+      await screenshotStorage.setServiceOption(userId, null);
+      await screenshotStorage.setPaymentOption(userId, null);
+      await screenshotStorage.setPaymentType(userId, null);
       await this.updateMenu(ctx, "Main Menu");
       this.userMenuOptions.set(userId, userMenuOptions);
     } catch (error) {
@@ -161,11 +170,11 @@ class Navigation {
       ctx.reply("An error occurred while going to main menu.");
     }
   }
-   getFAQIndex(userId) {
+  getFAQIndex(userId) {
     const userMenuOptions = this.userMenuOptions.get(userId);
     return userMenuOptions ? userMenuOptions.faqIndex : null;
   }
-   setFAQIndex(userId, index) {
+  setFAQIndex(userId, index) {
     const userMenuOptions = this.userMenuOptions.get(userId);
     if (userMenuOptions) {
       userMenuOptions.faqIndex = index;
@@ -178,14 +187,13 @@ class Navigation {
       const userMenuOptions = this.userMenuOptions.get(userId);
       const currentOption =
         userMenuOptions.stack[userMenuOptions.stack.length - 1];
-       
 
       if (!userMenuOptions) {
         this.userMenuOptions.set(userId, {
           stack: [],
           previousMenuMessageId: new Map(),
         });
-        this.menuMessageId = null; 
+        this.menuMessageId = null;
       }
       const chatInfo = await ctx.api.getChat(ctx.chat?.id);
 
@@ -219,24 +227,25 @@ class Navigation {
               console.log("Message already deleted, skipping deletion");
               // return; // Message has already been deleted, so we can exit early
             } else {
-              console.log("Error deleting reply message:")
+              console.log("Error deleting reply message:");
             }
           }
         }
       }
       // Update the menu
       const messageText =
-        groupInfo[option] ??  `<code>     </code><b>${option} section!</b><code>     </code>`;
-      const keyboard = generateInlineKeyboard(getMenuOptions(option,userId));
+        groupInfo[option] ??
+        `<code>     </code><b>${option} section!</b><code>     </code>`;
+      const keyboard = generateInlineKeyboard(getMenuOptions(option, userId));
       const replyMarkup = {
         inline_keyboard: keyboard,
         resize_keyboard: true,
         one_time_keyboard: true,
       };
       if (this.menuMessageId) {
-        await ctx.api.editMessageText(   
+        await ctx.api.editMessageText(
           ctx.chat.id,
-          this.menuMessageId, 
+          this.menuMessageId,
           messageText,
           {
             reply_markup: replyMarkup,
@@ -262,13 +271,13 @@ class Navigation {
           "Naira Payment",
           "FAQ",
           "Check Subscription Status",
-          "Ethereum Payment"
+          "Ethereum Payment",
         ];
         let qickMenuOptions = [
           "Generate Coupon",
           "Gift Coupon",
           "Generate Code",
-        ]
+        ];
         // Check if the selected option is in the menu options array
         if (MenuOptions.includes(option)) {
           // If it is, delete the message after 5 seconds
@@ -281,7 +290,7 @@ class Navigation {
               console.error("Error deleting reply message:");
             }
           }, 5000);
-        }else if(qickMenuOptions.includes(option)){
+        } else if (qickMenuOptions.includes(option)) {
           await ctx.api.deleteMessage(message?.chat.id, message.message_id);
         }
       }
@@ -294,7 +303,7 @@ class Navigation {
       console.log(error);
       ctx.reply("An error occurred while updating the menu.");
     }
-  } 
+  }
   async deleteUserFromStack(userId) {
     this.userMenuOptions.delete(userId);
     console.log(`User with ID ${userId} has been deleted from the stack`);
@@ -328,36 +337,37 @@ class Navigation {
       this.userMenuOptions.set(userId, {
         stack: [],
         previousMenuMessageId: new Map([[option, messageId]]),
-        inviteLinkId:null
+        inviteLinkId: null,
       });
     }
   }
   async performMaintenance(ctx) {
     if (maintenanceInProgress) {
       // Maintenance is already in progress, wait until it's done
-      await new Promise(resolve => setTimeout(resolve, 3000)); // Wait for 3 seconds
+      await new Promise((resolve) => setTimeout(resolve, 3000)); // Wait for 3 seconds
       return;
     }
-  
+
     maintenanceInProgress = true;
-  
+
     const messageIds = [];
-  
+
     // Send message to all users
     for (const [userId] of this.userMenuOptions) {
       console.log(`Sending message to user ${userId}`);
-      const messageText = "Dear valued user, 🤖\n\nWe're performing scheduled maintenance in 10 sec. Please excuse any inconvenience. You'll be returned to the main menu shortly. Thank you for your patience! 🙏\n\nIf you encounter any errors, please restart the bot. We apologize for any inconvenience.";
+      const messageText =
+        "Dear valued user, 🤖\n\nWe're performing scheduled maintenance in 10 sec. Please excuse any inconvenience. You'll be returned to the main menu shortly. Thank you for your patience! 🙏\n\nIf you encounter any errors, please restart the bot. We apologize for any inconvenience.";
       const messageId = await ctx.api.sendMessage(userId, messageText);
       console.log(`Message sent with ID ${messageId.message_id}`); // Access the message_id property
       messageIds.push({ userId, messageId: messageId.message_id }); // Store the message_id property
     }
-  
+
     // Clear storage and delete message after 5 minutes
     setTimeout(async () => {
       try {
         console.log("Start clearing storage...");
         this.userMenuOptions.clear(); // Clear the entire map
-        await screenshotStorage.clearAllScreenshots()
+        await screenshotStorage.clearAllScreenshots();
         console.log("Storage clear done!");
       } catch (error) {
         console.log(`Error clearing storage: ${error}`);
@@ -367,58 +377,69 @@ class Navigation {
             await ctx.api.deleteMessage(userId, messageId);
           } catch (error) {
             // console.log(`Error deleting message ${messageId} for user ${userId}: ${error}`);
-            await ctx.api.sendMessage(userId, "Error: Unable to delete message. Please try again later.");
+            await ctx.api.sendMessage(
+              userId,
+              "Error: Unable to delete message. Please try again later."
+            );
           }
         }
-         await this.getUniqueUserData();
+        await this.getUniqueUserData();
         // console.log(menu, "Users menu Options");
         maintenanceInProgress = false; // Set to false when maintenance is complete
       }
     }, 3000); // 5 minutes
   }
   async getSingleUserMenu(userId) {
-  const userMenuOptions = this.userMenuOptions.get(userId);
+    const userMenuOptions = this.userMenuOptions.get(userId);
     if (!userMenuOptions) {
       throw new Error(`User menu options not found for userId: ${userId}`);
     }
-  
+
     const userMenuData = {
       userId,
       stack: userMenuOptions.stack,
-      previousMenuMessageId: Object.fromEntries(userMenuOptions.previousMenuMessageId),
-      inviteLinkId:null
+      previousMenuMessageId: Object.fromEntries(
+        userMenuOptions.previousMenuMessageId
+      ),
+      inviteLinkId: null,
     };
-  
+
     return userMenuData;
   }
   async addAllUsersToMenu(users) {
     if (!Array.isArray(users)) {
-      throw new Error('Invalid users array');
+      throw new Error("Invalid users array");
     }
     try {
       for (const user of users) {
         const userId = user.userId;
-        if (typeof user?.userId !== 'number' && typeof user?.userId !== 'string') {
+        if (
+          typeof user?.userId !== "number" &&
+          typeof user?.userId !== "string"
+        ) {
           throw new Error(`User ID must be a number or string: ${user.userId}`);
         }
-        
+
         if (!this.userMenuOptions.has(userId)) {
           this.userMenuOptions.set(userId, {
             stack: user.stack,
-            previousMenuMessageId: new Map(Object.entries(user.previousMenuMessageId)),
+            previousMenuMessageId: new Map(
+              Object.entries(user.previousMenuMessageId)
+            ),
             inviteLinkId: user.inviteLinkId,
           });
-          
+
           // console.log("User added to userMenuOptions:");
           // console.log(this.userMenuOptions.get(userId));
         }
       }
-      
     } catch (error) {
-      console.error('Error adding users to menu:', error);
+      console.error("Error adding users to menu:", error);
     }
     // return this.userMenuOptions
   }
 }
 
-module.exports = Navigation;
+module.exports = {
+  Navigation
+};

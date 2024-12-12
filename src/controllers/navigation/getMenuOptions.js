@@ -15,7 +15,7 @@ const {
   bootCampBtn,
   vipPrice,
 } = require("../callback_handlers/menuButtons");
-const { settingsClass } = require("./settingsClass");
+const { settingsClass } = require("../callback_handlers/settings/settingsClass");
 const USER_ID = Number(process.env.USER_ID);
 
 const menuButtons = (userId, settingsDoc, discountPrices) => {

@@ -1,18 +1,19 @@
+// /src/controllers/callback_handlers/menuButtonsCallback/payment/approval/approveCallback.js
+
 const { groupInfo } = require("../../menuInfo");
-const { handleSettingsChange,generateCouponHandler } = require("../callback_handlers/handleSettings");
-const { getSubscriptionStatus } = require("../callback_handlers/checkSubscriptionStatus");
-const {
-  handleBankTransfer,
-  handleNairaPay,
-  handleBtcPay,
-  handleUsdtPay,
-  handleSkrillPay,
-  handleFAQText,
-  handleEthereumPay,
-} = require("../callback_handlers/menuButtonsCallback");
-const nav = require("./navigation_singleton");
-const Coupon = require("../../model/couponClass");
-const navigation = nav();
+const { generateCouponHandler } = require("../callback_handlers/settings/generateCouponHandler");
+const { handleSettingsChange } = require("../callback_handlers/settings/handleSettingsChange");
+const { handleBankTransfer } = require("../callback_handlers/menuButtonsCallback/payment/handleBankTransfer");
+const {  handleNairaPay } = require("../callback_handlers/menuButtonsCallback/payment/handleNairaPay");
+const { handleBtcPay } = require("../callback_handlers/menuButtonsCallback/payment/handleBtcPay");
+const { handleUsdtPay } = require("../callback_handlers/menuButtonsCallback/payment/handleUsdtPay");
+const { handleSkrillPay } = require("../callback_handlers/menuButtonsCallback/payment/handleSkrillPay");
+const { handleFAQText } = require("../callback_handlers/menuButtonsCallback/payment/handleFAQText");
+const { handleEthereumPay } = require("../callback_handlers/menuButtonsCallback/payment/handleEthereumPay");
+const Coupon = require("../../model/couponClass"); 
+const { getSubscriptionStatus } = require("../callback_handlers/channelHandlers/handleSubscription/checkSubscriptionStatus");
+const { Navigation } = require("./navigationClass");
+const navigation = Navigation.getInstance();
 const couponInstance = Coupon.getInstance()
 const navigationMap = (ctx,messageId,userId,data) => {
   const { oneMonth, threeMonth, sixMonth, oneYear } =
@@ -116,7 +117,7 @@ const navigationMap = (ctx,messageId,userId,data) => {
     },
     "check_subscription_status":{
       navigation:"Check Subscription Status",
-      callback:getSubscriptionStatus, 
+      callback: getSubscriptionStatus, 
     },
     "generate_code":{
       navigation:"Generate Code",

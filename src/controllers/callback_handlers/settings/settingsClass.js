@@ -1,4 +1,5 @@
-const settingsModel = require("../../model/settings.model");
+const settingsModel = require("../../../model/settings.model");
+
 class Settings {
   constructor() {
     this.userId = process.env.USER_ID;
@@ -135,6 +136,7 @@ const settingsClass = () => {
   }
   return instance;
 };
+
 module.exports = {
   settingsClass,
   Settings,

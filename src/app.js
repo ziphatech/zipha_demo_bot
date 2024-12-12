@@ -16,10 +16,8 @@ const { connectDB } = require("./config/connectDB");
 const { rateLimiter } = require("./config/rateLimiter");
 const schedule = require('node-schedule');
 const { MongoClient } = require('mongodb');
+const { settingsClass } = require("./controllers/callback_handlers/settings/settingsClass");
 const mongoUrl = process.env.DB_CONNECT;
-const { settingsClass } = require("./controllers/navigation/settingsClass");
-// const nav = require("./controllers/navigation/navigation_singleton");
-// Apply rate limiter to all requests
 const settings = settingsClass()
 
 MongoClient.connect(mongoUrl, async function(err, client) {

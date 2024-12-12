@@ -1,34 +1,25 @@
 const { Greybot } = require("./bots");
-const { handleMessages } = require("./controllers/messages/messageHandler");
-const {
-  handleChannelPost,  
-} = require("./controllers/callback_handlers/handleChannelPost");
 const { session } = require("grammy"); 
-const {
-  menuOptionsCallback,
-} = require("./controllers/callback_handlers/menuOptionsCallback");
-const nav = require("./controllers/navigation/navigation_singleton");
-const {
-  handleChatMember,
-} = require("./controllers/callback_handlers/handleChatMembers");
 const schedule = require('node-schedule');
-const {
-  checkSubscription,  
-  // checkExpiredUsersRemoved
-} = require("./controllers/callback_handlers/checkSubscriptionStatus");
-const Broadcast = require("./controllers/navigation/broadcast_singleton");   
+const Broadcast = require("./controllers/navigation/broadcast_singleton");    
 const { UserInfo } = require("./model/userManagementClass"); 
-const { handlePollAnswer } = require("./controllers/callback_handlers/handlePollAnswer");
-const channelId = process.env.VIP_SIGNAL_ID
+const { menuOptionsCallback } = require("./controllers/callback_handlers/menuOptions/menuOptionsCallback");
+const { checkSubscription } = require("./controllers/callback_handlers/channelHandlers/handleSubscription/checkSubscriptionStatus");
+const { handleChatMember } = require("./controllers/callback_handlers/channelHandlers/handleChatMembers/handleChatMembers");
+const { handleChannelPost } = require("./controllers/callback_handlers/channelHandlers/handleChannelPost/handleChannelPost");
+const { handlePollAnswer } = require("./controllers/callback_handlers/handlePoll/handlePollAnswer");
+const { handleMessages } = require("./controllers/callback_handlers/messageHandler/messageHandler");
+const { Navigation } = require("./controllers/navigation/navigationClass");
+const channelId = process.env.VIP_SIGNAL_ID 
 
 exports.GreyBotHandler = async () => { 
 
   const broadcast = Broadcast()
-  const navigation = nav();
+  const navigation = Navigation.getInstance();
   Greybot.use(
     session({
       initial: () => ({ step: "idle" }),
-    })
+    }) 
   );
   Greybot.on("chat_member", async (ctx) => { 
     await handleChatMember(ctx);

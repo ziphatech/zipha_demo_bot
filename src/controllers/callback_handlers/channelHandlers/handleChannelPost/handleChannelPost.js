@@ -1,10 +1,11 @@
-const screenshotStorage = require("../navigation/screenshotStorage_singleton");
-const Broadcast = require("../navigation/broadcast_singleton");
 const expectedChannelId = [Number(process.env.APPROVAL_CHANNEL_ID)];
-const expectedPostChannlId = [Number(process.env.PUBLIC_CHANNEL_ID),
-  Number(process.env.VIP_SIGNAL_ID)
+const expectedPostChannlId = [
+  Number(process.env.PUBLIC_CHANNEL_ID),
+  Number(process.env.VIP_SIGNAL_ID),
 ];
 const { InlineKeyboard } = require("grammy");
+const Broadcast = require("../../../navigation/broadcast_singleton");
+const screenshotStorage = require("../../../navigation/screenshotStorageClass");
 
 async function handleChannelPost(ctx) {
   try {
@@ -17,8 +18,8 @@ async function handleChannelPost(ctx) {
     const postCaption = ctx.update.channel_post?.caption;
     const appealMessageId = ctx.update.channel_post?.message_id;
     const keyword = String(process.env.QUERY_KEY_WORD);
-   
-    const broadcast = Broadcast(channelId,);
+
+    const broadcast = Broadcast(channelId);
     function resetBroadcast() {
       broadcast.active = false;
       broadcast.message = null;
@@ -26,24 +27,22 @@ async function handleChannelPost(ctx) {
       broadcast.messageId = null;
     }
     if (channelType === "channel" && expectedPostChannlId.includes(channelId)) {
-
       const keyboard = new InlineKeyboard().url(
         "CONTACT US",
         process.env.BOT_URL
       );
-      
-        const lowerCasePostMessage = appealMessage?.toLowerCase();
-        const lowerCasePostCaption = postCaption?.toLowerCase();
-        
+
+      const lowerCasePostMessage = appealMessage?.toLowerCase();
+      const lowerCasePostCaption = postCaption?.toLowerCase();
+
       if (lowerCasePostMessage?.includes(keyword.toLowerCase())) {
         const updatedMessage = appealMessage.replace(keyword, " ");
-      
+
         await ctx.api.deleteMessage(channelId, appealMessageId);
-        
+
         await ctx.api.sendMessage(channelId, updatedMessage, {
           reply_markup: keyboard,
         });
-       
       } else if (
         postPhoto &&
         lowerCasePostCaption?.includes(keyword.toLowerCase())
@@ -59,7 +58,7 @@ async function handleChannelPost(ctx) {
       }
     }
     // Check if broadcast userId is valid
-   
+
     if (!!(broadcast && broadcast.userId && broadcast.userId.userID)) {
       const {
         userID: userId,
@@ -91,11 +90,17 @@ ${appealMessage}
   `;
 
       try {
-        
-      // Handle appeal action
-      if (action === "appeal" && originalMessageId) {
+        // Handle appeal action
+        if (action === "appeal" && originalMessageId) {
           // Send photo and delete original message
-          await sendPhotoAndDeleteOriginal(ctx, userId, photoId, caption,broadcast,channelId);
+          await sendPhotoAndDeleteOriginal(
+            ctx,
+            userId,
+            photoId,
+            caption,
+            broadcast,
+            channelId
+          );
           setTimeout(async () => {
             await screenshotStorage.deleteAllScreenshotMessages(ctx, userId);
             resetBroadcast();
@@ -113,8 +118,15 @@ ${appealMessage}
     await sendErrorMessage(ctx, error);
   }
 }
-async function sendPhotoAndDeleteOriginal(ctx, userId, photoId, caption,broadcast,channelId) {
-  if(photoId){
+async function sendPhotoAndDeleteOriginal(
+  ctx,
+  userId,
+  photoId,
+  caption,
+  broadcast,
+  channelId
+) {
+  if (photoId) {
     await ctx.api.sendPhoto(userId, photoId, { caption, parse_mode: "HTML" });
   }
   await ctx.api.deleteMessage(broadcast.message.chat.id, broadcast.messageId);
