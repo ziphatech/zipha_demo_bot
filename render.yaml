@@ -1,0 +1,12 @@
+services:
+  - name: my-nodejs-app
+    build:
+      command: npm install && npx pm2 kill && npx pm2 reset all && npx pm2 start ecosystem.config.js --no-daemon
+    deploy: # or start
+      command: npm start  
+    runtime: nodejs
+    instanceType: starter
+    env: production
+    region: auto 
+    git:
+      branch: master
