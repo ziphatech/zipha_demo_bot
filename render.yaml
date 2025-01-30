@@ -2,11 +2,10 @@ services:
   - name: test-service
     type: web
     runtime: node
-    plan: starter
+    plan: free
     startCommand: npm start
     build:
       command: npm install
-    region: auto
-    git:
-      repoUrl: https://github.com/your-username/your-repo.git
-      branch: main
+    region: oregon
+    repo: https://github.com/your-username/your-repo.git
+    branch: master
