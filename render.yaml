@@ -4,8 +4,7 @@ services:
     runtime: node
     plan: free
     startCommand: npm start
-    build:
-      command: npm install
+    buildCommand: npm install
     region: oregon
     repo: https://github.com/your-username/your-repo.git
     branch: master
