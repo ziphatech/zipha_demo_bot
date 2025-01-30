@@ -4,3 +4,9 @@ services:
     runtime: node
     plan: starter
     startCommand: npm start
+    build:
+      command: npm install
+    region: auto
+    git:
+      repoUrl: https://github.com/your-username/your-repo.git
+      branch: main
