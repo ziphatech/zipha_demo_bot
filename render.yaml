@@ -1,5 +1,6 @@
 services:
-  - name: test-service  # Use a different name for testing
+  - name: test-service
     type: web
     runtime: node
     plan: starter
+    startCommand: npm start
