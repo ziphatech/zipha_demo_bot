@@ -1,13 +1,9 @@
 services:
   - name: my-nodejs-app
     build:
-      command: |  # Use the pipe (|) for multi-line commands
-        npm install
-        npx pm2 kill
-        npx pm2 reset all
-        npx pm2 start ecosystem.config.js --no-daemon
+      command: npm install && npm run build # Your normal build process
     deploy: # or start
-      command: npm start
+      command: npx pm2 start ecosystem.config.js --no-daemon # Start with pm2
     runtime: nodejs
     instanceType: starter
     env: production
