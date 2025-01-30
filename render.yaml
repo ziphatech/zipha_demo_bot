@@ -1,4 +1,3 @@
----
 services:
   - name: my-nodejs-app
     build:
