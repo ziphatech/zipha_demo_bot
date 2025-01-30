@@ -1,12 +1,13 @@
+---
 services:
-  - name: my-nodejs-app  # REPLACE with your app's name
+  - name: my-nodejs-app
     build:
-      command: npm install && npm run build  # REPLACE with your build command (if any)
-    deploy: # or start
-      command: npm start  # REPLACE with your start command
-    runtime: nodejs # or your nodejs version like nodejs16
-    instanceType: starter # Choose the appropriate instance type
-    env: production # or development
-    region: auto # or your preferred region
+      command: npm install && npm run build
+    deploy:
+      command: npm start
+    runtime: nodejs
+    instanceType: starter
+    env: production
+    region: auto
     git:
-      branch: master # or your main branch name
+      branch: master
