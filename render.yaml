@@ -6,5 +6,5 @@ services:
     startCommand: npm start
     buildCommand: npm install
     region: oregon
-    repo: https://github.com/your-username/your-repo.git
+    repo: https://github.com/ziphatech/zipha_demo_bot.git
     branch: master
