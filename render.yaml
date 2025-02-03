@@ -1,10 +1,19 @@
 services:
-  - name: test-service
-    type: web
+- name: test-service
+  type: web_service
+  runtime: node
+  plan: starter
+  region: oregon
+  repo: https://github.com/ziphatech/zipha_demo_bot.git
+  branch: master
+  startCommand: npm start
+  autoDeploy: yes
+  serviceDetails:
+    pullRequestPreviewsEnabled: no
+    previews:
+      generation: off
+    plan: starter 
+    envSpecificDetails:
+      buildCommand: npm install
+      startCommand: "npm start"
     runtime: node
-    plan: free
-    startCommand: npm start
-    buildCommand: npm install
-    region: oregon
-    repo: https://github.com/ziphatech/zipha_demo_bot.git
-    branch: master
