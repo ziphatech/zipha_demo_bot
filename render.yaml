@@ -17,4 +17,3 @@ services:
       buildCommand: npm install
       startCommand: "npm start"
     runtime: node
-
