@@ -39,11 +39,11 @@ exports.GreyBotHandler = async () => {
 
   //   console.log("Done Checking....")   
   // }); 
-  schedule.scheduleJob('0 0 0 * * *', async () => {
-    console.log("Checking....")
-    await checkSubscription(channelId);
-    console.log("Checking....")
-  });
+  // schedule.scheduleJob('0 0 0 * * *', async () => {
+  //   console.log("Checking....")
+  //   await checkSubscription(channelId);
+  //   console.log("Checking....")
+  // });
   //Runs maintainance every monday morning
   schedule.scheduleJob('0 0 0 * * 1', async () => { 
     console.log("Checking....")
