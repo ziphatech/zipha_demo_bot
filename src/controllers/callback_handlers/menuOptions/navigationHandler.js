@@ -44,7 +44,7 @@ exports.handleNavigationAction = async (ctx, navigationAction, option) => {
           createUserInstance.setExpirationDate(expirationDate);
           break;
         case "gift_coupon":
-          await ctx.reply("Please Enter Coupon Code containig six characters");
+          await ctx.reply("Please Enter Coupon Code below:");
           await couponInstance.setCouponMessageSet(true);
           break
         case "one_on_one_price_list":

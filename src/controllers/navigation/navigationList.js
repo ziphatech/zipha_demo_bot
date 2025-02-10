@@ -119,10 +119,6 @@ const navigationMap = (ctx,messageId,userId,data) => {
       navigation:"Check Subscription Status",
       callback: getSubscriptionStatus, 
     },
-    // "generate_code":{
-    //   navigation:"Generate Code",
-    //   callback:null
-    // },   
     "gift_coupon":{
       navigation:"Gift Coupon",
       callback:null

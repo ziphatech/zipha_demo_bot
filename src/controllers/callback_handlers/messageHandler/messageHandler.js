@@ -260,7 +260,7 @@ async function handleMessages(ctx) {
           {
             reply_markup: {
               inline_keyboard: [
-                [{ text: "Go Back", callback_data: "mainmenu" }],
+                [{ text: "Go Back", callback_data: "goback"}],
               ],
             },
           }

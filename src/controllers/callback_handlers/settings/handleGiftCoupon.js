@@ -91,7 +91,7 @@ exports.handleGiftCoupon = async (ctx) => {
       const responsePayment = await retryApiCall(() =>
         ctx.reply(data.message, {
           reply_markup: {
-            inline_keyboard: [[{ text: "Go Back", callback_data: "mainmenu" }]],
+            inline_keyboard: [[{ text: "Go Back", callback_data: "goback" }]],
           },
         })
       );
