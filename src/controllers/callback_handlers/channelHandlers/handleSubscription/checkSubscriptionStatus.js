@@ -5,7 +5,7 @@ const { UserInfo } = require("../../../../model/userManagementClass");
 const { retryApiCall } = require("../../../../utilities");
 const GREYBOT_ID = process.env.GREYBOT_ID;
  
-async function checkSubscription(channelId) {
+async function checkSubscription(channelId) { 
   try {
     console.log(`Checking subscription status for channel ${channelId}...`);
     const users = await retryApiCall(() =>
