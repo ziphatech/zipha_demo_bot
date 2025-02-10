@@ -10,7 +10,7 @@ class Coupon {
   static instance; 
 
   constructor() {
-    this.adminUserId = process.env.ADMIN_ID;
+    this.adminUserId = process.env.USER_ID;
     this.selectedOptions = new Map();
     this.pollMessageId = null;
     this.couponMessageSet = false;
