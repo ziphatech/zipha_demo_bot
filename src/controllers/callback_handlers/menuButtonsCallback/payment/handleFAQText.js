@@ -4,11 +4,8 @@ const { Navigation } = require("../../../navigation/navigationClass");
 exports.handleFAQText = async (ctx, direction) => {
   try {
     const navigation = Navigation.getInstance();
-    // const direction = ctx.update.callback_query.data;
     const faqArray = groupInfo["FAQs"];
-    let currentIndex = direction.includes("_")
-      ? direction.split("_")[1]
-      : direction;
+    let currentIndex = navigation.getFAQIndex(ctx.from.id);
 
     // Initialize previousMenuMessageId if it doesn't exist
     if (!navigation.userMenuOptions.has(ctx.from.id)) {
@@ -22,8 +19,8 @@ exports.handleFAQText = async (ctx, direction) => {
     const replyMarkup = {
       inline_keyboard: [
         [
-          { text: "Prev", callback_data: "prev_faq" },
-          { text: "Next", callback_data: "next_faq" },
+          { text: "<< Prev", callback_data: "prev_faq" },
+          { text: "Next >>", callback_data: "next_faq" },
         ],
         [
           {
@@ -54,6 +51,7 @@ exports.handleFAQText = async (ctx, direction) => {
         }
       }
     };
+   
 
     const editMessageText = async (faqText) => {
       try {
@@ -64,6 +62,7 @@ exports.handleFAQText = async (ctx, direction) => {
           {
             reply_markup: replyMarkup,
             parse_mode: "HTML",
+            disable_web_page_preview: true,
           }
         );
       } catch (error) {
@@ -77,43 +76,35 @@ exports.handleFAQText = async (ctx, direction) => {
         }
       }
     };
-
+    let previousMessageId
     switch (direction) {
-      case "FAQ":
-        const previousMessageId =
-          userMenuOptions.previousMenuMessageId.get("FAQ");
-        await deletePreviousMessage(previousMessageId);
-        navigation.setFAQIndex(ctx.from.id, 0);
-        const faqText = faqArray[0];
-        await ctx.api.sendMessage(ctx.chat?.id, faqText, {
-          reply_markup: replyMarkup,
-          parse_mode: "HTML",
-        });
-        break;
-
       case `next_${currentIndex}`:
-        const nextPreviousMessageId =
-          userMenuOptions.previousMenuMessageId.get(direction);
-        await deletePreviousMessage(nextPreviousMessageId);
-        const nextIndex = (parseInt(currentIndex) + 1) % faqArray.length;
+        const nextIndex = (currentIndex + 5) % faqArray.length;
+      
+        previousMessageId = userMenuOptions.previousMenuMessageId.get(`next_${currentIndex}`);
+        const nextFaqText = getFaqText(nextIndex, 5);
+        await deletePreviousMessage(previousMessageId);
         navigation.setFAQIndex(ctx.from.id, nextIndex);
-
-        const nextFaqText = faqArray[nextIndex];
         await editMessageText(nextFaqText);
         break;
 
       case `prev_${currentIndex}`:
-        const prevPreviousMessageId =
-          userMenuOptions.previousMenuMessageId.get(direction);
-        await deletePreviousMessage(prevPreviousMessageId);
-
-        const prevIndex =
-          (parseInt(currentIndex) - 1 + faqArray.length) % faqArray.length;
+        const prevIndex = (currentIndex - 5 + faqArray.length) % faqArray.length;
+        previousMessageId =
+        userMenuOptions.previousMenuMessageId.get(`prev_${currentIndex}`);
+        const prevFaqText = getFaqText(prevIndex, 5);
+        await deletePreviousMessage(previousMessageId);
         navigation.setFAQIndex(ctx.from.id, prevIndex);
-
-        const prevFaqText = faqArray[prevIndex];
         await editMessageText(prevFaqText);
+        break;
 
+      case "FAQ":
+        navigation.setFAQIndex(ctx.from.id, 0);
+        const faqText = getFaqText(0, 5);
+        await ctx.api.sendMessage(ctx.chat?.id, faqText, {
+          reply_markup: replyMarkup,
+          parse_mode: "HTML",
+        });
         break;
 
       default:
@@ -123,3 +114,23 @@ exports.handleFAQText = async (ctx, direction) => {
     console.error("Error in handleFAQText:", error);
   }
 };
+
+const getFaqText = (startIndex, count) => {
+  let faqText = "";
+  for (let i = startIndex; i < startIndex + count && i < groupInfo["FAQs"].length; i++) {
+    faqText += `<strong>${groupInfo["FAQs"][i].question}</strong>\n\n<blockquote>${groupInfo["FAQs"][i].answer}</blockquote>\n\n`;
+  }
+  return faqText;
+};
+  
+
+// const getFaqText = (startIndex, count) => {
+//   let faqText = "";
+//   for (let i = startIndex; i < startIndex + count && i < groupInfo["FAQs"].length; i++) {
+//     const faqObject = groupInfo["FAQs"][i];
+//     const question = faqObject.question;
+//     const answer = faqObject.answer;
+//     faqText += `<b>Q: ${question}</b>\n${answer}\n\n`;
+//   }
+//   return faqText;
+// }
