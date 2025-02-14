@@ -59,7 +59,7 @@ const generateMenu = (adminUserId,userId)=> {
   
   const mainMenuOptions = [
     [{ text: "Vip Signal", callback_data: "vip_signal" }],
-    [{ text: "Mentorship ( Coming Soon )", callback_data: "mentorship1" }],
+    [{ text: "Mentorship", callback_data: "mentorship" }],
     [{ text: "Fund Management", callback_data: "fund_management" }],
     [{ text: "3 Days BootCamp", callback_data: "bootcamp" }],
     [{ text: "Partnership", callback_data: "partnership" }],
