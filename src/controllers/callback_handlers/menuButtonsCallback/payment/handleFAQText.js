@@ -62,6 +62,7 @@ exports.handleFAQText = async (ctx, direction) => {
           {
             reply_markup: replyMarkup,
             parse_mode: "HTML",
+            disable_web_page_preview: true,
           }
         );
       } catch (error) {
