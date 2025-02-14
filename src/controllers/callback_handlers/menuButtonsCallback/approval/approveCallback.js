@@ -1,17 +1,20 @@
 // /src/controllers/callback_handlers/menuButtonsCallback/payment/approval/approveCallback.js
-
+const { default: mongoose } = require("mongoose");
 const { getNewInviteLink } = require("./getNewInviteLink");
 const { packageHandler } = require("./packageHandler");
 const { createUserInstance } = require("../../../../model/userInfo_singleton");
 const screenshotStorage = require("../../../navigation/screenshotStorageClass");
-const { Navigation } = require("../../../navigation/navigationClass");
+const catchMechanismClass = require("../../../../config/catchMechanismClass");
+const catchMechanismClassInstance = catchMechanismClass.getInstance(
+  mongoose.connection
+);
 const ALLOWED_PAYMENT_OPTIONS = {
   MENTORSHIP_PRICE_LIST: "mentorship_price_list",
   BOOTCAMP_PAYMENT: "bootcamp_payment",
   ONE_MONTH: "one_month",
   THREE_MONTHS: "three_months",
   SIX_MONTHS: "six_months",
-  TWELVE_MONTHS: "twelve_months",
+  TWELVE_MONTHS: "twelve_months", 
 };
 exports.approveCallback = async (ctx, uniqueId) => {
   try {
@@ -33,8 +36,10 @@ exports.approveCallback = async (ctx, uniqueId) => {
       },
     } = ctx.update;
 
-    const navigation = Navigation.getInstance();
     const userStorage = await screenshotStorage.getUserStorage(uniqueId);
+    if(!userStorage){
+      await catchMechanismClassInstance.initialize();
+    }
     if (!userStorage) {
       await ctx.answerCallbackQuery({
         callback_query_id: callbackQueryId,

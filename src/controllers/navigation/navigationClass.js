@@ -157,8 +157,7 @@ class Navigation {
           }
         }
       }
-
-      await screenshotStorage.resetScreenshotStorage(userId);
+      // await screenshotStorage.resetScreenshotStorage(userId);
       await screenshotStorage.addUser(userId, username);
       await screenshotStorage.setServiceOption(userId, null);
       await screenshotStorage.setPaymentOption(userId, null);
@@ -269,7 +268,6 @@ class Navigation {
           "BTC",
           "Foreign Payment",
           "Naira Payment",
-          "FAQ",
           "Check Subscription Status",
           "Ethereum Payment",
         ];
@@ -292,6 +290,7 @@ class Navigation {
           }, 5000);
         } else if (qickMenuOptions.includes(option)) {
           await ctx.api.deleteMessage(message?.chat.id, message.message_id);
+          console.log("Hi",qickMenuOptions)
         }
       }
       // Update the userMenuOptions Map

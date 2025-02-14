@@ -63,7 +63,7 @@ const generateMenu = (adminUserId,userId)=> {
     [{ text: "Fund Management", callback_data: "fund_management" }],
     [{ text: "3 Days BootCamp", callback_data: "bootcamp" }],
     [{ text: "Partnership", callback_data: "partnership" }],
-    [{ text: "Gift Coupon", callback_data: "gift_coupon" }],
+    [{ text: "Gift", callback_data: "gift_coupon" }],
     [{ text: "FAQ", callback_data: "faq" }],
     [{ text: "Contact Support", url: process.env.CONTACT_SUPPORT }],
   ];

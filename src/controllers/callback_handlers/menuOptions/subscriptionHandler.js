@@ -3,9 +3,13 @@ const screenshotStorage = require("../../navigation/screenshotStorageClass");
 const {
   approveCallback,
 } = require("../menuButtonsCallback/approval/approveCallback");
+const { default: mongoose } = require("mongoose");
 const { SubscriptionStatus } = require("./constants");
 const { handleError } = require("./errorHandler");
-
+const catchMechanismClass = require("../../../config/catchMechanismClass");
+const catchMechanismClassInstance = catchMechanismClass.getInstance(
+  mongoose.connection
+);
 exports.handleSubscriptionAction = async (
   ctx,
   uniqueId,

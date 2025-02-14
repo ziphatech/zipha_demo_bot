@@ -63,9 +63,9 @@ app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);  
 
   try {
-    await connectDB();
+    await connectDB(); 
     // Initialize bots
-    await initializeGreybot();
+    await initializeGreybot(); 
     // await initializeMessageBot();
 
     // Start bot handlers

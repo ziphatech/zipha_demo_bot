@@ -111,117 +111,90 @@ const groupInfo = {
   </strong>
       `,
   "Agree Two": "<blockquote><i>You'd be redirected to send a direct message to Greysuitfx so he can contact you and give you the next update</i></blockquote>",
-  "3 Days BootCamp": `3 days bot camp Fee : $ 79.9`,
-  "FAQs":[`
-
-  <strong>Frequently Asked Questions (FAQ)</strong>
-
-  <strong>1  Who are we?</strong>
-  <blockquote> financial trading firm, with 7 years of trading experience. All our services have been active for 3 years. We focus only on XAUUSD (Gold). We have gained mastery of this pair XAUUSD for the past few years so we focus on just one pair.  </blockquote>
-
-  <strong>2  How much are VIP signals how do I pay, and how do I sign up?</strong>
-  <blockquote>Greysuitfx VIP signal is worth $50 monthly, $110 for 3 months, $210 for 6 months, $400 for 1 year. Go to the main menu and choose a package.</blockquote>
-
-  <strong>3  How are signals sent, what format are they sent?</strong>
-  <blockquote>Limit or market execution are used, but mainly market execution and rarely limit as you are alerted before we send signals 
-  
-  Click the Link below to view our signal format
-  https://drive.google.com/file/d/1HXP1XpngbXCVxg5yP237zuSl_AFD3giI/view?usp=sharing </blockquote>
-  
-  <strong>4  What time are signals sent?</strong>
-  <blockquote>
-  London, New York and Asian Session
-  But 2 sessions will be traded per day, this depends on whether there is the volume at a particular session or not you will be updated on the volume change and what session you will be expecting signals. But majorly we trade London and New York.
-  </blockquote>
-
-  <strong>5  What is the minimum capital to trade VIP signals?</strong>
-  <blockquote>The minimum capital to trade is $500. This is so you can manage yourself properly when on a losing streak and have enough capital to recover from losses. No minimum capital is required for prop firms, make sure to stick to the risk management plan you will be given. </blockquote>
-  
-  <strong>6  What happens if I choose not to continue my subscription?</strong>
-  <blockquote>You can choose to stop your subscription, but no refund, and when the subscription is over, then it is over.</blockquote>
-  
-  <strong>7  How do I get discounts or free Forex signals?</strong>
-  <blockquote> Keep an eye open on the GSFX public community for discount updates  </blockquote>
-  
-  <strong>8  Can I use any Forex broker?</strong>
-  <blockquote>
-  Yes but we use these brokers   https://one.exness-track.com/a/3a40inh6ub 
-  https://clicks.pipaffiliates.com/c?c=901103&l=en&p=0 
-  </blockquote>
-
-  <strong>9  What broker do you recommend?</strong>
-  <blockquote>
-  XM: https://clicks.pipaffiliates.com/c?c=901103&l=en&p=0
-  EXNESS: https://one.exness-track.com/a/3a40inh6ub
-  </blockquote>
-
-  <strong>10  Are signals copier friendly?</strong>
-  <blockquote>
-  Yes, they are. You can also use this recommended Telegram to MT4 copier.
-  https://telegram-signals-copier.com/?ref=VRPESUDEYB 
-  </blockquote>
-
-  <strong>11  Do you do copy service?</strong>
-  <blockquote>Currently No. But coming soon  </blockquote>
-
-  <strong>12  Do you run account management?</strong>
-  <blockquote>
-  Yes check the fund management Session
-  Minimum capital is $10k.
-  </blockquote>
-
-  <strong>13  Do you have a PAMM account?</strong>
-  <blockquote>Not yet. Once it's available the community will be updated.</blockquote>
-  
-  <strong>14  What prop firm do you recommend?</strong>
-  <blockquote>Unfortunately, we do not recommend any for now, seeing the current conditions of prop firms but then Iwecan do giveaways for those who want to trade them. we would only recommend firms that give a payout. With most of them, we had issues with, only a few have we received a payout. But can’t recommend them because of the internal knowledge we have of these firms.  </blockquote>
-  
-  <strong>15  Do you pass prop firms?</strong>
-  <blockquote>
-  Yes, but currently that service is unavailable. Most of the firms are just tricky with messy rules and we like to keep to our word when we guarantee you a passing service as we always deliver.  </blockquote>`,
-  
-  `<strong>16  What is your risk management plan for your signals?</strong>
-  <blockquote>
-  <i>All signal provided should be taken with PROPER RISK MANAGEMENT. Allowed risk to be used per trade is as follows;
-  The maximum percentage to be risked is 2% per trade but for funded account traders it is advised to risk 0.5% or 0.25% on every signal sent.</i>
-  
-  0.5% risk with 4 signals daily = 2% risk daily
-  0.25% risk with 4 signals daily = 1% risk daily
-  1% risk with 4 signals daily = 4% risk daily [for personal account only] at your own risk 
-  
-  <i>Risking 2 %daily, you have 1 week to fail your challenge if all the signals provided here are all losses consistently [back to back] for 1 week.</i> 
-  
-  <i>Risking 1% daily, you have 2 weeks to fail your challenge if all the signals provided here are all losses consistently [back to back] for 2 week.
-  Max SL will be 35pips and that will be in rare conditions so 30pips will be the commonly used SL.
-  We target a (1:3 minimum) and (1:8 maximum) on every setup.
-  With this, no one should complain about hitting max daily drawdown on the funded account.</i>
-  </blockquote>
-
-  NB: 
-  <blockquote>
-  • CMP – Current Market Price – When this is attached to any signal sent it means instant execution at the current market price.
-  • LIMIT- This means placing a pending order according to the price stated.
-  • B.E – This means Move Stop loss to Break Even
-  • SL – Stop loss 
-  • TP – Take Profit
-  
-
-  Whenever TP 1 hits you have two options
-  1. Close all positions 
-  2. (Take partials) Close 50% of running positions and hold till Tp2
-  </blockquote>
-
-  <strong>17  Do you allow partnerships?</strong> 
-  <blockquote>
-  Yes, contact support if you need to partner with us or collaborate with us.
-  </blockquote>
-  
-  <strong>18  Do you provide mentorship?</strong>
-  <blockquote>
-  Yes, we do but currently unavailable.
-  </blockquote>
-  `] 
-  
+  "3 Days BootCamp": `3 days bot camp Fee : $ 79.9`, 
+  "FAQs": [
+    {
+      "question": "1. Who are we?",
+      "answer": "We are a financial trading firm with seven years of trading experience, focusing exclusively on XAUUSD (Gold) for the past three years."
+    },
+    {
+      "question": "2. How much are VIP signals, how do I pay, and how do I sign up?",
+      "answer": "Greysuitfx VIP signals are priced as follows: $50 per month, $110 for three months, $210 for six months, $400 for one year. To subscribe, visit the main menu and choose your preferred package."
+    },
+    {
+      "question": "3. How are signals sent, and in what format?",
+      "answer": "We primarily use market execution, with limit orders used occasionally. You will be alerted before we send signals. Click the link below to view our signal format: (link unavailable)"
+    },
+    {
+      "question": "4. What time are signals sent?",
+      "answer": "Signals are sent during the London, New York, and Asian sessions. However, we trade only two sessions per day based on market volume. Our primary focus is on the London and New York sessions."
+    },
+    {
+      "question": "5. What is the minimum capital required to trade VIP signals?",
+      "answer": "The minimum recommended capital is $500 to ensure proper risk management and recovery from potential losses. For prop firms, there is no minimum capital requirement, but you must adhere to the risk management plan provided."
+    },
+    {
+      "question": "6. What happens if I choose not to continue my subscription?",
+      "answer": "You may choose to stop your subscription at any time, but refunds are not available. Once your subscription expires, access to VIP signals will be discontinued."
+    },
+    {
+      "question": "7. How can I get discounts or free Forex signals?",
+      "answer": "Stay updated in the GSFX public community for discount announcements."
+    },
+    {
+      "question": "8. Can I use any Forex broker?",
+      "answer": "Yes, but we recommend the following brokers: Exness, XM, (https://one.exness-track.com/a/3a40inh6ub) ,(https://clicks.pipaffiliates.com/c?c=901103&l=en&p=0)"
+    },
+    {
+      "question": "9. Are signals compatible with trade copiers?",
+      "answer": "Yes, they are. We recommend this Telegram-to-MT4 copier: (link unavailable)"
+    },
+    {
+      "question": "10. Do you offer a copy trading service?",
+      "answer": "Not currently, but we plan to introduce this service soon."
+    },
+    {
+      "question": "11. Do you provide account management services?",
+      "answer": "Yes, we do. The minimum capital required for fund management is $10,000."
+    },
+    {
+      "question": "12. Do you have a PAMM account?",
+      "answer": "Not yet, but we will update the community once it becomes available."
+    },
+    {
+      "question": "13. What prop firms do you recommend?",
+      "answer": "We do not currently recommend any prop firms due to their varying conditions. However, we conduct giveaways for traders interested in them."
+    },
+    {
+      "question": "14. Do you offer prop firm challenge passing services?",
+      "answer": "Yes, but this service is currently unavailable."
+    },
+    {
+      "question": "15. What are your risk management strategies?",
+      "answer": "Effective risk management is essential for protecting your capital. Our strategy includes: Maximum risk per trade: 1% (Funded traders are advised to risk 0.5% or 0.25% per signal)"
+    },
+    {
+      "question": "16. What are your trade management strategies?",
+      "answer": "Our trade management plan includes: Target profit levels: 100-150 pips maximum, Risk-to-reward ratio: Fixed at 1:5 for consistent returns and winning streaks"
+    },
+    {
+      "question": "17. What trading strategy do you use?",
+      "answer": "We use a proprietary strategy called 'The Grey Mastery Strategy' (TGA Strategy)."
+    },
+    {
+      "question": "18. Do you allow partnerships?",
+      "answer": "Yes, contact support if you need to partner with us or discuss a collaboration."
+    },
+    {
+      "question": "19. Do you provide mentorship?",
+      "answer": "Yes, we do, but currently, that option is unavailable."
+    },
+    {
+      "question": "20. What platforms do you trade on?",
+      "answer": "All trades are taken with 0 spread broker using MT4 for execution."
+    }
+  ],
+  "FAQ":"Frequently Asked Questions (FAQ) 2025"
   }
   
   module.exports = {
