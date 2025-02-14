@@ -51,7 +51,7 @@ const menuButtons = (userId, settingsDoc, discountPrices) => {
       options: paymentMethod,
     },
     {
-      name: "Group Mentorship Fee - $250",
+      name: "Group Mentorship Fee - $300",
       options: paymentMethod,
     },
     {

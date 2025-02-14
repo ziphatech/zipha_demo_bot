@@ -60,7 +60,7 @@ const navigationMap = (ctx,messageId,userId,data) => {
       callback: null,
     },
     "mentorship_price_list": {
-      navigation: "Group Mentorship Fee - $250",
+      navigation: "Group Mentorship Fee - $300",
       callback: null,
     },
     "one_on_one_price_list": {

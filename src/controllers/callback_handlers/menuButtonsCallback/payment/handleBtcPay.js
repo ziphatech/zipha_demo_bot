@@ -5,14 +5,14 @@ exports.handleBtcPay = async (ctx) => {
       const navigation = Navigation.getInstance()
       const messageId = ctx.update.callback_query.message.message_id;
       // Handle Coinbase Pay option
-      const replyText = `<b>Please make payment to the addresses below</b>\n\n
-  <i>BTC Payment</i>
-  
-  <blockquote>
-  <strong>BTC Address</strong> : <code>1E5vFKzgBv9jWH2oXAyJ9Lbnrnh9EvuJgW</code>
-  </blockquote>
-  <i>Copy address and make payment and send screeshot of completed payment and wait for confirmation</i>
-  `;
+    const replyText = `<b>Please make payment to the addresses below</b>\n\n
+<i>BTC Payment</i>
+
+<blockquote>
+<strong>BTC Address</strong> : <code>1PEkj7q6FXnQS589CeUnyRz7PY6CnCj1Mi</code>
+</blockquote>
+<i>Copy address and make payment and send screeshot of completed payment and wait for</i>
+`;
       const buttons = [[{ text: "Main Menu", callback_data: "mainmenu" }]]; // your buttons array
       await ctx.reply(replyText, {
         reply_markup: {
