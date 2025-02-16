@@ -14,21 +14,30 @@ exports.handleFAQText = async (ctx, direction) => {
         previousMenuMessageId: new Map(),
         faqIndex: 0,
       });
-    }
+    } 
     const userMenuOptions = navigation.userMenuOptions.get(ctx.from.id);
     const replyMarkup = {
-      inline_keyboard: [
-        [
-          { text: "<< Prev", callback_data: "prev_faq" },
-          { text: "Next >>", callback_data: "next_faq" },
-        ],
-        [
-          {
-            text: "Main Menu",
-            callback_data: "mainmenu",
-          },
-        ],
-      ],
+      inline_keyboard: faqArray.length > 5
+        ? [
+            [
+              { text: "<< Prev", callback_data: "prev_faq" },
+              { text: "Next >>", callback_data: "next_faq" },
+            ],
+            [
+              {
+                text: "Main Menu",
+                callback_data: "mainmenu",
+              },
+            ],
+          ]
+        : [
+            [
+              {
+                text: "Main Menu",
+                callback_data: "mainmenu",
+              },
+            ],
+          ],
       resize_keyboard: true,
       one_time_keyboard: true,
     };
