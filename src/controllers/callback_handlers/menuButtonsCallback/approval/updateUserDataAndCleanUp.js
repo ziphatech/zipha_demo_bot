@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const screenshotStorage = require("../../../navigation/screenshotStorageClass");
 const { createUserInstance } = require("../../../../model/userInfo_singleton");
 const { handleUpdateError } = require("./handleUpdateError");
-const { retryApiCall } = require("../../../../utilities");
+const { retryApiCall, updateSubscriptionAndExpirationDate } = require("../../../../utilities");
 const { UserInfo } = require("../../../../model/userManagementClass");
 exports.updateUserDataAndCleanUp = async (ctx, userId, isActive) => {
   // Approval actions
