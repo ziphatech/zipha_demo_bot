@@ -6,12 +6,12 @@ exports.handleSkrillPay = async (ctx) => {
       const messageId = ctx.update.callback_query.message.message_id;
       // Handle Coinbase Pay option
       const replyText = `<b>Please make payment to the address below</b>\n\n
-  <i>Skrill Payment</i>
-  
-  <blockquote>
-  <strong>Skrill Email</strong> : <code> vineedking@gmail.com</code>
-  </blockquote>
-  <i>Copy address and make payment and send screeshot of completed payment and wait for confirmation</i>
+<i>Skrill Payment</i>
+
+<blockquote>
+<strong>Skrill Email</strong> : <code> vineedking@gmail.com</code>
+</blockquote>
+<i>Copy address and make payment and send screeshot of completed payment and wait for confirmation</i>
   `;
       const buttons = [[{ text: "Main Menu", callback_data: "mainmenu" }]]; // your buttons array
       await ctx.reply(replyText, {

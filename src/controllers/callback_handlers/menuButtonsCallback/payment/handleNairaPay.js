@@ -36,27 +36,26 @@ exports.handleNairaPay = async (ctx) => {
         }
   
         const replyText = `
-        <strong>Naira Payment (Exclusive for Nigerians)</strong>
-        
-        <i>Please make payment to the details below</i>
-        
-        <blockquote>
-        
-        Bank : UBA
-        
-        Bank Name : <code>DOYEN WILSON EHIOKHAI</code>
-        
-        Acc Number : <code>2142459793</code>
-        
-        Amount : ${formartedNairaPrice} NGN
-        
-        </blockquote>
-        <blockquote>
-        Current Exchange Rate: $1 USD = ${flexibleExchangeRate} NGN (Rate is subject to change)
-        </blockquote>
-        
-        <i>Copy Account details and make payment and send screenshot of completed payment here then wait for confirmation.</i>
-        `;
+<strong>Naira Payment (Exclusive for Nigerians)</strong>
+
+<i>Please make payment to the details below</i>
+
+<blockquote>
+
+Bank : UBA
+
+Bank Name : <code>DOYEN WILSON EHIOKHAI</code>
+
+Acc Number : <code>2142459793</code>
+
+Amount : ${formartedNairaPrice} NGN
+
+</blockquote>
+<blockquote>
+Current Exchange Rate: $1 USD = ${flexibleExchangeRate} NGN (Rate is subject to change)
+</blockquote>
+
+<i>Copy Account details and make payment and send screenshot of completed payment here then wait for confirmation.</i>`;
         const buttons = [[{ text: "Main Menu", callback_data: "mainmenu" }]]; // your buttons array
         const messageId = ctx.update.callback_query.message.message_id;
         await ctx.reply(replyText, {
