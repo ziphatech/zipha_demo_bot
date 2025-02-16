@@ -135,7 +135,7 @@ async function handleMessages(ctx) {
         screenshotData,
         serviceOption === "3 Days BootCamp" ? "BootCamp" : "Generic"
       );
-      console.log(serviceOption === "3 Days BootCamp" ? "BootCamp" : "Generic")
+      // console.log(serviceOption === "3 Days BootCamp" ? "BootCamp" : "Generic")
       if (!userStorage) {
         await handleErrorMessage(
           ctx,
