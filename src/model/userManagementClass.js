@@ -168,24 +168,26 @@ class UserInfo {
 
   async saveUserToDB() {
     try {
-      // Check user status before updating
       const existingUser = await User.findOne({ userId: this.userId });
-      // Check if user has selected an option that shouldn't update the database
-      if (skipUpdateOptions.includes(this.subscription.type)) {
-        return; // Exit function without updating
+      let skipUpdate = false;
+  
+      if (existingUser) {
+        if (existingUser.subscription.status === "active") {
+          this.subscription.status = "active";
+          console.log("User status is active, skipping database update.");
+          skipUpdate = true;
+        } else if (existingUser.subscription.status === "expired") {
+          this.subscription.status = "expired";
+          console.log("User status is expired, skipping database update.");
+          skipUpdate = true;
+        }
       }
-      if (existingUser && existingUser.subscription.status === "active") {
-        this.subscription.status = "active";
-        console.log("User status is active, skipping database update.");
-        return; // Exit function without updating
-      } else if (
-        existingUser &&
-        existingUser.subscription.status === "expired"
-      ) {
-        this.subscription.status = "expired";
-        console.log("User status is expired, skipping database update.");
-        return; // Exit function without updating
+  
+      if (skipUpdate) {
+        console.log("Skipping database update...");
+        return;
       }
+  
       const userData = {
         userId: this.userId,
         username: this.username,
@@ -194,16 +196,15 @@ class UserInfo {
         inviteLink: this.inviteLink,
         groupMembership: this.groupMembership,
       };
-
+  
       await User.findOneAndUpdate(
         { userId: this.userId },
         { $set: userData },
         { new: true, upsert: true }
       );
     } catch (error) {
-      // console.error("Error saving user to DB:", error);
-
-      // Send error notification to admin via Telegram bot
+      console.error("Error saving user to DB:", error);
+  
       const systemInfo = `
         Error Message: Failed to update user info
         Error Details: ${error.message}

@@ -24,7 +24,6 @@ exports.packageHandler = {
         subscriptionType,
         ,
         ,
-        ,
         googleDriveLink,
         isActive,
         isExpired,
