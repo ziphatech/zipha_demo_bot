@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'greysuit_zipha_bot',
+      name: 'kingftp_zipha_bot',
       script: process.env.NODE_ENV === 'development' ? 'npm run dev' : 'npm start',
       args: 'src/app.js',
       watch: process.env.NODE_ENV === 'development',
