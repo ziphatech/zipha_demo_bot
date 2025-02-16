@@ -436,9 +436,10 @@ class ScreenshotStorage {
         } catch (error) {
           console.error(`Error adding user to storage: ${error}`);
         }
-      } else {
-        console.log(`User ${user.username} already exists in storage`);
       }
+      //  else {
+        // console.log(`User ${user.username} already exists in storage`);
+      // }
     }
     // return this.storage;
   }
