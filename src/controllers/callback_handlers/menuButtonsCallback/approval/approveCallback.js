@@ -62,7 +62,7 @@ exports.approveCallback = async (ctx, uniqueId) => {
       return;
     }
 
-    const { username, userId, package } = screenshotData;
+    const { username, userId, package:userPackage } = screenshotData;
 
     if (!messageId) {
       await ctx.answerCallbackQuery({
@@ -157,7 +157,7 @@ exports.approveCallback = async (ctx, uniqueId) => {
       isActive,
       isExpired,
     ];
-    const handlePackage = packageHandler[package];
+    const handlePackage = packageHandler[userPackage || "Generic"];
     if (handlePackage) {
       await handlePackage(...params);
     } else {
