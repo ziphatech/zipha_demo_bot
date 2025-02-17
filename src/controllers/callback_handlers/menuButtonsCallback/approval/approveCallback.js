@@ -73,15 +73,6 @@ exports.approveCallback = async (ctx, uniqueId) => {
       });
       return;
     }
-    // if (!userPackage) {
-    //   await ctx.answerCallbackQuery({
-    //     callback_query_id: callbackQueryId,
-    //     text: `🤦‍♂️ User Package not valid ${package}!`,
-    //     parse_mode: "HTML",
-    //     show_alert: true,
-    //   });
-    //   return;
-    // }
 
     // Input validation
     if (
@@ -157,7 +148,7 @@ exports.approveCallback = async (ctx, uniqueId) => {
       isActive,
       isExpired,
     ];
-    const handlePackage = packageHandler[screenshotData?.package] || packageHandler["Generic"];
+    const handlePackage = packageHandler[userPackage || "Generic"]
     if (handlePackage) {
       await handlePackage(...params);
     } else {
