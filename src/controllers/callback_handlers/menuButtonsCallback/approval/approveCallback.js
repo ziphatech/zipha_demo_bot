@@ -62,7 +62,7 @@ exports.approveCallback = async (ctx, uniqueId) => {
       return;
     }
 
-    const { username, userId, package } = screenshotData;
+    const { username, userId, package:userPackage } = screenshotData;
 
     if (!messageId) {
       await ctx.answerCallbackQuery({
@@ -73,15 +73,15 @@ exports.approveCallback = async (ctx, uniqueId) => {
       });
       return;
     }
-    if (!package) {
-      await ctx.answerCallbackQuery({
-        callback_query_id: callbackQueryId,
-        text: `🤦‍♂️ User Package not valid ${package}!`,
-        parse_mode: "HTML",
-        show_alert: true,
-      });
-      return;
-    }
+    // if (!userPackage) {
+    //   await ctx.answerCallbackQuery({
+    //     callback_query_id: callbackQueryId,
+    //     text: `🤦‍♂️ User Package not valid ${package}!`,
+    //     parse_mode: "HTML",
+    //     show_alert: true,
+    //   });
+    //   return;
+    // }
 
     // Input validation
     if (
