@@ -157,7 +157,7 @@ exports.approveCallback = async (ctx, uniqueId) => {
       isActive,
       isExpired,
     ];
-    const handlePackage = packageHandler[screenshotData?.package];
+    const handlePackage = packageHandler[screenshotData?.package] || packageHandler["Generic"];
     if (handlePackage) {
       await handlePackage(...params);
     } else {
