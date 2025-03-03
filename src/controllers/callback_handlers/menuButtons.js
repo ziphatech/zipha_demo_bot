@@ -90,7 +90,7 @@ const vipPrice = [
 const paymentMethod = [
   [{ text: "USDT", callback_data: "usdt" }],
   [{ text: "BTC", callback_data: "btc" }],
-  [{ text: "Ethereum Payment", callback_data: "erc" }],
+  // [{ text: "Ethereum Payment", callback_data: "erc" }],
   [{ text: "Naira Payment", callback_data: "naira" }],
   // [{ text: "Skrill Payment", callback_data: "skrill" }],
   [{ text: "Foreign Payment", callback_data: "foreign_payment" }],
