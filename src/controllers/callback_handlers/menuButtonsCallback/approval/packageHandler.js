@@ -60,11 +60,11 @@ exports.packageHandler = {
           ];
           break;
         case PAYMENT_OPTIONS.ONE_ON_ONE_PRICE_LIST:
-          messageText = "Welcome to 1 On 1 Mentorship with Kinftp";
+          messageText = "Welcome to 1 On 1 Mentorship with Kingftp";
           keyboard = [
             [
               {
-                text: "DM Mr Grey",
+                text: "DM Kingftp",
                 url: googleDriveLink,
               },
             ],
@@ -136,11 +136,11 @@ exports.packageHandler = {
             keyboard = activeKeyboard;
           } else if (isExpired) {
             messageText =
-              "Your subscription has been renewed.\nWelcome to Kinftp VIP Signal Channel.";
+              "Your subscription has been renewed.\nWelcome to Kingftp VIP Signal Channel.";
             keyboard = expiredKeyboard;
           } else {
             messageText =
-              "Congrats! Your payment has been approved.\nWelcome to Kinftp VIP Signal Channel.";
+              "Congrats! Your payment has been approved.\nWelcome to Kingftp VIP Signal Channel.";
             keyboard = vipChannelKeyboard;
           }
           break;
