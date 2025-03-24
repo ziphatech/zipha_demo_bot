@@ -59,7 +59,7 @@ app.get("/keepalive", (req, res) => {
  
 // Start Express server
 const PORT = process.env.PORT || 3000;   
-app.listen(PORT, async () => {
+app.listen(PORT, async () => { 
   console.log(`Server is running on port ${PORT}`);  
 
   try {
@@ -72,7 +72,7 @@ app.listen(PORT, async () => {
     await GreyBotHandler();  
     await settings.getSettings()
     // await MessageBotHandler();
-  } catch (error) {
+  } catch (error) { 
     console.log("Exicuted....")
     await sendSystemInfoToAdmin(error);
     console.log("Done Executing....")

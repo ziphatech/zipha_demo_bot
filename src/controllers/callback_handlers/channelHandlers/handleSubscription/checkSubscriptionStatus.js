@@ -91,13 +91,23 @@ async function updateUserExpirationByJoinDate(userId) {
       return;
     }
 
-    const DAY = 24 * 60 * 60 * 1000;
+    const DAY = 24 * 60 * 60 * 1000; // 1 day in milliseconds
+
     const EXPIRATION_DATES = {
-      one_month: 30 * DAY,
+      one_month: 1 * 30 * DAY,
+      two_months: 2 * 30 * DAY,
       three_months: 3 * 30 * DAY,
+      four_months: 4 * 30 * DAY,
+      five_months: 5 * 30 * DAY,
       six_months: 6 * 30 * DAY,
+      seven_months: 7 * 30 * DAY,
+      eight_months: 8 * 30 * DAY,
+      nine_months: 9 * 30 * DAY,
+      ten_months: 10 * 30 * DAY,
+      eleven_months: 11 * 30 * DAY,
       twelve_months: 12 * 30 * DAY,
     };
+    
 
     const joinedAt = user[0].groupMembership.joinedAt.getTime();
     // console.log(user,joinedAt,"user.groupMembership?.joinedAt",user.groupMembership?.joinedAt)
@@ -396,7 +406,7 @@ async function checkExpiredUsersRemoved() {
 
 async function getSubscriptionStatus(ctx) {
   try {
-    const userId = ctx?.from.id;
+    const userId = ctx.from?.id;
     const user = await retryApiCall(() => User.findOne({ userId }));
 
     if (!user) {
@@ -412,25 +422,26 @@ async function getSubscriptionStatus(ctx) {
       const username = user.username || user.fullname;
       const expirationDate = user.subscription.expirationDate;
       const now = Date.now();
+      console.log(expirationDate <= now,"expirationDate <= now")
       const subscriptionStatus = user.subscription.status;
 
       if (subscriptionStatus === "inactive") {
         ctx.reply(
-          `Hello ${username}, your subscription is currently inactive.`
+          `Hello ${username || "User"}, your subscription is currently inactive.`
         );
       } else if (subscriptionStatus === "lifetime") {
         ctx.reply(
-          `Hello ${username}, you are a lifetime subscriber.`
+          `${username || "User"}, you are a lifetime subscriber.`
         );
       } else if (subscriptionStatus === "left") {
         ctx.reply(
-          `Hello ${username}, your subscription  has expired because you left the channel you will not have access to it until you renew your package.`
+          `Hello ${username || "User"}, your subscription  has expired because you left the channel you will not have access to it until you renew your package.`
         );
       } else if (!expirationDate) {
-        ctx.reply(`Hello ${username}, you don't have an active subscription.`);
+        ctx.reply(`Hello ${username || "User"}, you don't have an active subscription.`);
       } else if (expirationDate <= now) {
         ctx.reply(
-          `Hello ${username}, your ${subscriptionType} subscription has expired.`
+          `Hello ${username || "User"}, your ${subscriptionType} subscription has expired.`
         );
       } else {
         const timeLeft = expirationDate - now;
@@ -460,7 +471,7 @@ async function getSubscriptionStatus(ctx) {
         };
         ctx.reply(
           `
-*Hello ${username},*
+*Hello ${username || "User"},*
 *Your ${subStatus} subscription is active.*
 *Time left:* ${days} _days_, ${hours} _hours_, ${minutes} _minutes_, ${seconds} _seconds_.
 
