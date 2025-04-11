@@ -9,7 +9,7 @@ const {
   sendSystemInfoToAdmin,
   restartBotWithPM2,
   MessageBot,
-} = require("./bots");
+} = require("./bots"); 
 const axios = require("axios")
 const { GreyBotHandler } = require("./greybot");
 const { connectDB } = require("./config/connectDB");
@@ -56,18 +56,18 @@ app.get("/keepalive", (req, res) => {
   console.log(`Keep-alive timestamp: ${timestamp}`);
   res.send(`Server is alive (timestamp: ${timestamp})`);
 });
- 
+  
 // Start Express server
 const PORT = process.env.PORT || 3000;   
 app.listen(PORT, async () => { 
-  console.log(`Server is running on port ${PORT}`);  
+  console.log(`Server is running on port ${PORT}`);   
 
   try {
     await connectDB(); 
     // Initialize bots
     await initializeGreybot(); 
     // await initializeMessageBot();
-
+ 
     // Start bot handlers
     await GreyBotHandler();  
     await settings.getSettings()

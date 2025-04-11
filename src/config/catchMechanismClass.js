@@ -45,37 +45,41 @@ class catchMechanismClass {
   }
   async addCatchMechanism(userId) {
     try {
-      // console.log(`Adding user with ID: ${userId}`);
-
       const userMenuData = await navigation.getSingleUserMenu(userId);
-      const userManagementData = await createUserInstance.getUserManagementData(
-        userId
-      ); 
-      const screenshotStorageData =
-        await screenshotStorage.getScreenshotStorageData(userId);
-
+      const userManagementData = await createUserInstance.getUserManagementData(userId);
+      const screenshotStorageData = await screenshotStorage.getScreenshotStorageData(userId);
+  
       const updates = {
         userMenu: userMenuData,
         userManagement: userManagementData,
         screenshotStorage: screenshotStorageData,
       };
-
+  
       const result = await this.CatchMechanismModel.findOneAndUpdate(
         { userId },
         { $set: updates },
         { new: true, upsert: true }
       );
-
-      // console.log(`User collective information updated for ${userId}`);
+  
+      // console.log(`User collective information updated for ${userId}`, result);
+  
+      // const screenshots = result.screenshotStorage?.screenshots || [];
+  
+      // screenshots.forEach((screenshot, index) => {
+      //   console.log(`Screenshot ${index + 1}:`);
+      //   console.log("Photo ID:", screenshot.photoId);
+      //   console.log("Message ID:", screenshot.messageId);
+      //   console.log("Channel Message ID:", screenshot.channelMessageId);
+      //   console.log("Payment Message ID:", screenshot.paymentMessageId);
+      // });
+  
       return result;
     } catch (error) {
-      console.error(
-        `Error updating user collective information for ${userId}:`,
-        error
-      );
+      console.error(`Error updating user collective information for ${userId}:`, error);
       return null;
     }
   }
+  
   async updateUserCatchClasses(user) {
     const userMenu = user.userMenu;
     const userManagement = user.userManagement;

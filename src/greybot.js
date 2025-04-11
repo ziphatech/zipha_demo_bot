@@ -4,7 +4,7 @@ const schedule = require('node-schedule');
 const Broadcast = require("./controllers/navigation/broadcast_singleton");    
 const { UserInfo } = require("./model/userManagementClass"); 
 const { menuOptionsCallback } = require("./controllers/callback_handlers/menuOptions/menuOptionsCallback");
-const { checkSubscription,
+const { checkSubscription, updateUsersExpirationByJoinDate,
   //  getSubscriptionStatus,
   //   updateUserExpirationByJoinDate
    } = require("./controllers/callback_handlers/channelHandlers/handleSubscription/checkSubscriptionStatus");
@@ -19,7 +19,7 @@ exports.GreyBotHandler = async () => {
 
   const broadcast = Broadcast()
   const navigation = Navigation.getInstance();
-  // const userId = 5969422886
+  // const userId = 5754599035
   Greybot.use(
     session({
       initial: () => ({ step: "idle" }),
@@ -28,10 +28,11 @@ exports.GreyBotHandler = async () => {
   Greybot.on("chat_member", async (ctx) => { 
     await handleChatMember(ctx);
   }); 
-  Greybot.on("message", (ctx) => {
+  Greybot.on("message",  (ctx) => {
     
     // updateUserExpirationByJoinDate(userId)
-    // getSubscriptionStatus(ctx)
+    // getSubscriptionStatus(ctx) 
+     
     handleMessages(ctx, broadcast)});
   Greybot.on("channel_post", handleChannelPost);
   Greybot.on("callback_query:data", menuOptionsCallback); 
@@ -44,7 +45,7 @@ exports.GreyBotHandler = async () => {
   //   // await checkExpiredUsersRemoved() 
   //   // UserInfo.findDuplicateUsersByFullName()
   //   // updateUsersExpirationByJoinDate()
-
+  //   await updateUsersExpirationByJoinDate()
   //   console.log("Done Checking....")   
   // }); 
   schedule.scheduleJob('0 0 0 * * *', async () => {
