@@ -37,22 +37,24 @@ exports.approveCallback = async (ctx, uniqueId) => {
     } = ctx.update;
 
     const userStorage = await screenshotStorage.getUserStorage(uniqueId);
-    if(!userStorage){
+    if (!userStorage) {
       await catchMechanismClassInstance.initialize();
     }
+
     if (!userStorage) {
       await ctx.answerCallbackQuery({
         callback_query_id: callbackQueryId,
-        text: "User  storage data not found.",
+        text: "User storage data not found.",
         show_alert: true,
       });
-      console.error("User  storage data not found for userId:", uniqueId);
+      console.error("User storage data not found for userId:", uniqueId);
       return;
     }
 
     const subscriptionType = createUserInstance.getSubscriptionType();
     const { isExpired, isActive } = userStorage;
-    const screenshotData = userStorage.screenshots.get(uniqueId);
+    const screenshotData = await screenshotStorage.getScreenshot(uniqueId);;
+
     if (!screenshotData) {
       await ctx.answerCallbackQuery({
         callback_query_id: callbackQueryId,
@@ -62,7 +64,6 @@ exports.approveCallback = async (ctx, uniqueId) => {
       return;
     }
 
-    const { username, userId, package:userPackage } = screenshotData;
 
     if (!messageId) {
       await ctx.answerCallbackQuery({
@@ -89,15 +90,6 @@ exports.approveCallback = async (ctx, uniqueId) => {
       return;
     }
 
-    if (!userId) {
-      await ctx.answerCallbackQuery({
-        callback_query_id: callbackQueryId,
-        text: `🤦‍♂️ User ID not set!`,
-        parse_mode: "HTML",
-        show_alert: true,
-      });
-      return;
-    }
 
     if (!subscriptionType) {
       await ctx.answerCallbackQuery({
@@ -108,12 +100,13 @@ exports.approveCallback = async (ctx, uniqueId) => {
       });
       return;
     }
+
     // Generate the new invite link
     switch (subscriptionType) {
       case ALLOWED_PAYMENT_OPTIONS.ONE_MONTH:
       case ALLOWED_PAYMENT_OPTIONS.THREE_MONTHS:
       case ALLOWED_PAYMENT_OPTIONS.SIX_MONTHS:
-      case ALLOWED_PAYMENT_OPTIONS.TWELVE_MONTHS:
+      case ALLOWED_PAYMENT_OPTIONS.TWELVE_MONTHS: {
         const vipInviteLink = await getNewInviteLink(
           ctx,
           channelId,
@@ -124,7 +117,8 @@ exports.approveCallback = async (ctx, uniqueId) => {
           vipInviteLink.name
         );
         break;
-      case ALLOWED_PAYMENT_OPTIONS.MENTORSHIP_PRICE_LIST:
+      }
+      case ALLOWED_PAYMENT_OPTIONS.MENTORSHIP_PRICE_LIST: {
         const mentorshipInvite = await getNewInviteLink(
           ctx,
           MENTORSHIP_CHANNEL_ID,
@@ -135,12 +129,13 @@ exports.approveCallback = async (ctx, uniqueId) => {
           mentorshipInvite.name
         );
         break;
+      }
     }
 
     // Handle package-specific actions
     const params = [
       ctx,
-      userId,
+      uniqueId, 
       subscriptionType,
       MENTORSHIP_CHANNEL_ID,
       channelId,
@@ -148,7 +143,7 @@ exports.approveCallback = async (ctx, uniqueId) => {
       isActive,
       isExpired,
     ];
-    const handlePackage = packageHandler[userPackage || "Generic"];
+    const handlePackage = packageHandler[userStorage.package || "Generic"];
     if (handlePackage) {
       await handlePackage(...params);
     } else {

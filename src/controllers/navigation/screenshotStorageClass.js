@@ -1,263 +1,172 @@
-
-
 class ScreenshotStorage {
   constructor() {
-    this.storage = new Map(); 
+    this.storage = new Map(); // userId -> UserStorage
   }
+
   async addUser(userId, username) {
     const id = String(userId);
     if (!this.storage.has(id)) {
-      const user = { 
-        userId, 
-        username, 
-        screenshots: new Map(), 
+      const user = {
+        userId,
+        username,
+        screenshots: [],
         paymentOption: null,
         paymentType: null,
+        package: null,
         serviceOption: null,
         isExpired: false,
         isActive: false,
       };
       this.storage.set(id, user);
     }
-    // console.log(`User ${username} created`)
     return this.storage.get(id);
   }
-  async addScreenshot(userId, screenshotData,packageType= "Generic") {
+
+  async addScreenshot(userId, screenshotData, packageType = "Generic") {
     const id = String(userId);
     const { photoId, messageId, username } = screenshotData;
+   
     let userStorage = this.storage.get(id);
   
     if (!userStorage) {
       userStorage = await this.addUser(userId, username);
     } else {
-      userStorage.username = username; // Update username if user exists
+      userStorage.username = username;
     }
   
-    if (!userStorage.screenshots) {
-      userStorage.screenshots = new Map();
-    }
+    // Update the user package
+    userStorage.package = packageType;
   
-    if (!userStorage.screenshots.has(id)) {
-      userStorage.screenshots.set(id, {
-        userId,
-        photoIds: [photoId],
-        messageIds: [messageId],
-        messageIdCount: 1, // Initialize messageIdCount
-        channelMessageIds: [],
-        paymentMessageIds: [],
-        package:packageType,
-        username,
-      });
-    } else {
-      const existingScreenshot = userStorage.screenshots.get(id);
-      existingScreenshot.photoIds.push(photoId);
-      existingScreenshot.messageIds.push(messageId);
-      existingScreenshot.messageIdCount++; // Increment messageIdCount
-      userStorage.screenshots.set(id, existingScreenshot);
+    // Check if screenshot with same messageId already exists
+    const exists = userStorage.screenshots.some(s => s.messageId === messageId);
+    if (!exists) {
+      const newScreenshot = {
+        photoId,
+        messageId,
+      };
+      userStorage.screenshots.push(newScreenshot);
     }
+    // console.log(userStorage,"userStorage")
   
+    this.storage.set(id, userStorage);
     return userStorage;
   }
+  
+
   async getMessageIdCount(userId) {
-    const userStorage = this.storage.get(String(userId));
-    if (!userStorage || !userStorage.screenshots) return null;
-  
-    const screenshot = userStorage.screenshots.get(String(userId));
-    if (!screenshot) return null;
-  
-    return screenshot.messageIdCount;
-  }
-  async updateChannelAndPaymentMessageId(userId, channelMessageId,paymentMessageId) {
     const id = String(userId);
     const userStorage = this.storage.get(id);
-  
-    if (!userStorage || !userStorage.screenshots) {
-      return;
-    }
-  
-    const screenshot = userStorage.screenshots.get(id);
-    screenshot.channelMessageIds.push(channelMessageId);
-    screenshot.paymentMessageIds.push(paymentMessageId)
-    userStorage.screenshots.set(id, screenshot);
+    if (!userStorage) throw new Error("User storage not found");
+    return userStorage.screenshots.length;
   }
+
+  async updateChannelAndPaymentMessageId(userId, messageId, channelMessageId, paymentMessageId) {
+    const id = String(userId);
+    const userStorage = this.storage.get(id);
+    if (!userStorage || userStorage.screenshots.length === 0) return;
+  
+    const targetScreenshot = userStorage.screenshots.find(s => s.messageId === messageId);
+    if (!targetScreenshot) return;
+  
+    targetScreenshot.channelMessageId = channelMessageId;
+    targetScreenshot.paymentMessageId = paymentMessageId;
+  
+    this.storage.set(id, userStorage);
+  }  
+
   async getUserStorage(userId) {
     const id = String(userId);
     return this.storage.get(id);
   }
+
   async deleteAllScreenshotMessages(ctx, userId) {
     const id = String(userId);
     const userStorage = this.storage.get(id);
     const channelId = process.env.APPROVAL_CHANNEL_ID;
     const deletedMessageIds = new Set();
     const CHUNK_SIZE = 10;
-    const timeout = 5000; // 5 seconds
-  
-    if (!userStorage || !userStorage.screenshots) {
+    const timeout = 5000;
+
+    if (!userStorage || !userStorage.screenshots.length) {
       console.log(`No screenshots found for user ${userId}`);
-      return;
+      return true;
     }
-  
-    const screenshots = Array.from(userStorage.screenshots.values());
-  
-    for (const screenshot of screenshots) {
-      // Delete channel messages
-      const channelMessageIds = screenshot.channelMessageIds;
-      const chunkedChannelMessageIds = [];
-      for (let i = 0; i < channelMessageIds.length; i += CHUNK_SIZE) {
-        chunkedChannelMessageIds.push(channelMessageIds.slice(i, i + CHUNK_SIZE));
+
+    const channelMessageIds = [];
+    const messageIds = [];
+    const paymentMessageIds = [];
+
+    for (const screenshot of userStorage.screenshots) {
+      if (screenshot.channelMessageId) channelMessageIds.push(screenshot.channelMessageId);
+      if (screenshot.messageId) messageIds.push(screenshot.messageId);
+      if (screenshot.paymentMessageId) paymentMessageIds.push(screenshot.paymentMessageId);
+    }
+
+    const processDeletion = async (ids, deleteFn) => {
+      const chunkedIds = [];
+      for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+        chunkedIds.push(ids.slice(i, i + CHUNK_SIZE));
       }
-  
-      for (const chunk of chunkedChannelMessageIds) {
-        await Promise.all(chunk.map(async (channelMessageId) => {
+
+      for (const chunk of chunkedIds) {
+        await Promise.all(chunk.map(async (msgId) => {
           try {
-            await ctx.api.deleteMessage(channelId, channelMessageId);
-            // console.log(`Deleted channel message ${channelMessageId} for user ${userId}`);
-            deletedMessageIds.add(channelMessageId);
-            screenshot.channelMessageIds.splice(screenshot.channelMessageIds.indexOf(channelMessageId), 1);
+            await deleteFn(msgId);
+            deletedMessageIds.add(msgId);
           } catch (error) {
-            if (error.description === 'Bad Request: message to delete not found') {
-              // console.log(`Message ${channelMessageId} already deleted, skipping...`);
-              deletedMessageIds.add(channelMessageId);
-              screenshot.channelMessageIds.splice(screenshot.channelMessageIds.indexOf(channelMessageId), 1);
+            if (error.description === "Bad Request: message to delete not found") {
+              deletedMessageIds.add(msgId);
             } else {
-              console.error(`Error deleting channel message ${channelMessageId}:`, error);
-              await new Promise(resolve => setTimeout(resolve, timeout));
+              console.error(`Error deleting message ${msgId}:`, error);
+              await new Promise(res => setTimeout(res, timeout));
               try {
-                await ctx.api.deleteMessage(channelId, channelMessageId);
-                // console.log(`Deleted channel message ${channelMessageId} for user ${userId} after retry`);
-                deletedMessageIds.add(channelMessageId);
-                screenshot.channelMessageIds.splice(screenshot.channelMessageIds.indexOf(channelMessageId), 1);
-              } catch (error) {
-                console.error(`Failed to delete channel message ${channelMessageId} after retry:`, error);
+                await deleteFn(msgId);
+                deletedMessageIds.add(msgId);
+              } catch (retryError) {
+                console.error(`Failed to delete message ${msgId} after retry:`, retryError);
               }
             }
           }
         }));
       }
-  
-      // Delete user messages
-      const userMessageIds = screenshot.messageIds;
-      const chunkedUserMessageIds = [];
-      for (let i = 0; i < userMessageIds.length; i += CHUNK_SIZE) {
-        chunkedUserMessageIds.push(userMessageIds.slice(i, i + CHUNK_SIZE));
-      }
-  
-      for (const chunk of chunkedUserMessageIds) {
-        await Promise.all(chunk.map(async (messageId) => {
-          try {
-            await ctx.api.deleteMessage(userId, messageId);
-            // console.log(`Deleted user message ${messageId} for user ${userId}`);
-            deletedMessageIds.add(messageId);
-            screenshot.messageIds.splice(screenshot.messageIds.indexOf(messageId), 1);
-          } catch (error) {
-            if (error.description === 'Bad Request: message to delete not found') {
-              // console.log(`Message ${messageId} already deleted, skipping...`);
-              deletedMessageIds.add(messageId);
-              screenshot.messageIds.splice(screenshot.messageIds.indexOf(messageId), 1);
-            } else {
-              console.error(`Error deleting user message ${messageId}:`, error);
-              await new Promise(resolve => setTimeout(resolve, timeout));
-              try {
-                await ctx.api.deleteMessage(userId, messageId);
-                // console.log(`Deleted user message ${messageId} for user ${userId} after retry`);
-                deletedMessageIds.add(messageId);
-                screenshot.messageIds.splice(screenshot.messageIds.indexOf(messageId), 1);
-              } catch (error) {
-                console.error(`Failed to delete user message ${messageId} after retry:`, error);
-              }
-            }
-          }
-        }));
-      }
-  
-    // Delete payment messages
-    const paymentMessageIds = screenshot.paymentMessageIds;
-    const chunkedPaymentMessageIds = [];
-    for (let i = 0; i < paymentMessageIds.length; i += CHUNK_SIZE) {
-      chunkedPaymentMessageIds.push(paymentMessageIds.slice(i, i + CHUNK_SIZE));
-    }
 
-    for (const chunk of chunkedPaymentMessageIds) {
-      await Promise.all(chunk.map(async (paymentMessageId) => {
-        try {
-          await ctx.api.deleteMessage(userId, paymentMessageId);
-          // console.log(`Deleted payment message ${paymentMessageId} for user ${userId}`);
-          deletedMessageIds.add(paymentMessageId);
-          screenshot.paymentMessageIds.splice(screenshot.paymentMessageIds.indexOf(paymentMessageId), 1);
-        } catch (error) {
-          if (error.description === 'Bad Request: message to delete not found') {
-            // console.log(`Message ${paymentMessageId} already deleted, skipping...`);
-            deletedMessageIds.add(paymentMessageId);
-            screenshot.paymentMessageIds.splice(screenshot.paymentMessageIds.indexOf(paymentMessageId), 1);
-          } else {
-            console.error(`Error deleting payment message ${paymentMessageId}:`, error);
-            await new Promise(resolve => setTimeout(resolve, timeout));
-            try {
-              await ctx.api.deleteMessage(userId, paymentMessageId);
-              // console.log(`Deleted payment message ${paymentMessageId} for user ${userId} after retry`);
-              deletedMessageIds.add(paymentMessageId);
-              screenshot.paymentMessageIds.splice(screenshot.paymentMessageIds.indexOf(paymentMessageId), 1);
-            } catch (error) {
-              console.error(`Failed to delete payment message ${paymentMessageId} after retry:`, error);
-            }
-          }
-        }
-      }));
-    }
+      return ids.filter(msgId => !deletedMessageIds.has(msgId));
+    };
 
-    // Update storage with modified screenshot data
-    this.storage.set(id, userStorage);
+    await processDeletion(channelMessageIds, msgId => ctx.api.deleteMessage(channelId, msgId));
+    await processDeletion(messageIds, msgId => ctx.api.deleteMessage(userId, msgId));
+    await processDeletion(paymentMessageIds, msgId => ctx.api.deleteMessage(userId, msgId));
+
+    console.log("Finished deleting all screenshot messages for user", userId);
+    return true;
   }
 
-  console.log("Finished deleting all screenshot messages for user", userId);
-  return true;
-  }
   async getScreenshot(userId) {
-    // await this.addUser(userId);
     const id = String(userId);
     const userStorage = this.storage.get(id);
-    return userStorage.screenshots.get(id); 
+    if (userStorage) {
+      return {
+        username: userStorage.username,
+        screenshots: userStorage.screenshots,
+      };
+    } else {
+      throw new Error("Screenshot data not found");
+    }
   }
+
   async getAllUsers() {
     const allUsers = [];
-    for (const [id, userStorage] of this.storage) {
-      allUsers.push({
-        userId: id,
-        username: userStorage.username,
-        paymentOption: userStorage.paymentOption,
-        paymentType: userStorage.paymentType,
-        serviceOption: userStorage.serviceOption,
-        isExpired: userStorage.isExpired,
-        isActive: userStorage.isActive,
-        screenshots: Array.from(userStorage.screenshots.values()),
-      });
+    for (const [, userStorage] of this.storage.entries()) {
+      allUsers.push({ ...userStorage, screenshots: [...userStorage.screenshots] });
     }
     return allUsers;
   }
+
   async getAllScreenshots(userId) {
     const id = String(userId);
-    const Storage = this.storage.get(id);
-    const userStorage = Storage.screenshots.get(id)
-  
-    if (!userStorage.screenshots || userStorage.screenshots.size === 0) {
-      return []; // Return empty array if screenshots is undefined or empty
-    }
-  
-    const screenshots = [];
-  
-    userStorage.screenshots.forEach((screenshot, screenshotId) => {
-      screenshots.push({
-        screenshotId,
-        userId: screenshot.userId,
-        photoIds: screenshot.photoIds,
-        messageIds: screenshot.messageIds,
-        channelMessageIds: screenshot.channelMessageIds,
-        paymentMessageIds: screenshot.paymentMessageIds,
-      });
-    });
-  
-    return screenshots;
+    return this.storage.get(id)?.screenshots ?? [];
   }
+
   async updateUserStorage(userId, updatedUserStorage) {
     const id = String(userId);
     if (this.storage.has(id)) {
@@ -266,6 +175,7 @@ class ScreenshotStorage {
       console.error(`User ${id} not found in storage`);
     }
   }
+
   async resetScreenshotStorage(userId) {
     const id = String(userId);
     const userStorage = this.storage.get(id);
@@ -275,174 +185,151 @@ class ScreenshotStorage {
       userStorage.serviceOption = null;
       userStorage.isExpired = false;
       userStorage.isActive = false;
-      userStorage.username = null;
-      userStorage.payment = null;
-      userStorage.screenshots.clear();
+      userStorage.username = '';
+      userStorage.screenshots = [];
+      userStorage.package = ''
+      this.storage.set(id, userStorage);
     }
   }
 
   async removeScreenshot(userId) {
     const id = String(userId);
     const userStorage = this.storage.get(id);
-    userStorage.screenshots.delete(id);
-    console.log("Removed screenshot from stack")
+    if (userStorage && userStorage.screenshots.length > 0) {
+      userStorage.screenshots.pop();
+      console.log("Removed latest screenshot from stack for user", id);
+      this.storage.set(id, userStorage);
+    }
   }
+
   async clearAllScreenshots() {
     try {
-      this.storage.clear();
-      console.log("Storage cleared");
+      for (const [id, userStorage] of this.storage.entries()) {
+        userStorage.screenshots = [];
+        this.storage.set(id, userStorage);
+      }
+      console.log("All user screenshots cleared");
     } catch (error) {
       console.error("Error clearing storage:", error);
     }
   }
+
   async removeUser(userId) {
     const id = String(userId);
     this.storage.delete(id);
-    console.log("User removed from stack")
+    console.log("User removed from stack");
   }
-  async updateSubscriptionStatus(userId, subscriptionStatus) {  
+
+  async updateSubscriptionStatus(userId, subscriptionStatus) {
     const id = String(userId);
     const userStorage = this.storage.get(id);
-  
+    if (!userStorage) return;
+
     switch (subscriptionStatus) {
-      case 'active':
+      case "active":
         userStorage.isActive = true;
         userStorage.isExpired = false;
-        // console.log(userStorage.isExpired,userStorage.isActive,"isExpired,isActive")
         break;
-      case 'expired':
+      case "expired":
         userStorage.isExpired = true;
         userStorage.isActive = false;
-        // console.log(userStorage.isExpired,userStorage.isActive,"isExpired,isActive")
         break;
-      case 'inactive':
+      case "inactive":
         userStorage.isActive = false;
         userStorage.isExpired = false;
-        // console.log(userStorage.isExpired,userStorage.isActive,"isExpired,isActive")
         break;
       default:
         return;
     }
-  
-    // Save the updated user storage
+
     this.storage.set(id, userStorage);
   }
+
   async setPaymentOption(userId, value) {
     const id = String(userId);
     const userStorage = this.storage.get(id);
-    if (!userStorage) {
-      console.error(`User ${id} not found in storage`);
-      return;
-    }
+    if (!userStorage) return console.error(`User ${id} not found in storage`);
     userStorage.paymentOption = value;
   }
+
   async getPaymentOption(userId) {
-    const id = String(userId);
-    const userStorage = this.storage.get(id);
-    if (!userStorage) {
-      console.error(`User ${id} not found in storage`);
-      return null;
-    }
-    return userStorage.paymentOption;
+    return this.storage.get(String(userId))?.paymentOption ?? null;
   }
+
   async setPaymentType(userId, value) {
     const id = String(userId);
     const userStorage = this.storage.get(id);
-    if (!userStorage) {
-      console.error(`User ${id} not found in storage`);
-      return;
-    }
+    if (!userStorage) return console.error(`User ${id} not found in storage`);
     userStorage.paymentType = value;
   }
+
   async getPaymentType(userId) {
-    const id = String(userId);
-    const userStorage = this.storage.get(id);
-    if (!userStorage) {
-      console.error(`User ${id} not found in storage`);
-      return null;
-    }
-    return userStorage.paymentType;
+    return this.storage.get(String(userId))?.paymentType ?? null;
   }
+
   async getServiceOption(userId) {
-    const id = String(userId);
-    const userStorage = this.storage.get(id);
-    if (!userStorage) {
-      console.error(`User ${id} not found in storage`);
-      return null;
-    }
-    return userStorage.serviceOption;
+    return this.storage.get(String(userId))?.serviceOption ?? null;
   }
+
   async setServiceOption(userId, value) {
     const id = String(userId);
     const userStorage = this.storage.get(id);
-    if (!userStorage) {
-      console.error(`User ${id} not found in storage`);
-      return;
-    }
+    if (!userStorage) return console.error(`User ${id} not found in storage`);
     userStorage.serviceOption = value;
   }
+
   async getScreenshotStorageData(userId) {
-    const id = String(userId);
-    const screenshotStorageOptions = this.storage.get(id);;
-    if (!screenshotStorageOptions) {
-      throw new Error(`Screenshot storage options not found for userId: ${userId}`);
-    }
-    const screenshotStorageData = {
-      userId: id,
-      username: screenshotStorageOptions?.username,
-      screenshots: screenshotStorageOptions?.screenshots,
-      paymentOption: screenshotStorageOptions?.paymentOption,
-      paymentType: screenshotStorageOptions?.paymentType,
-      serviceOption: screenshotStorageOptions?.serviceOption,
-      isExpired: screenshotStorageOptions?.isExpired,
-      isActive: screenshotStorageOptions?.isActive,
+    const userStorage = this.storage.get(String(userId));
+    if (!userStorage) throw new Error(`Screenshot storage options not found for userId: ${userId}`);
+    return {
+      userId: userStorage.userId,
+      username: userStorage.username,
+      screenshots: [...userStorage.screenshots],
+      package:userStorage.package,
+      paymentOption: userStorage.paymentOption,
+      paymentType: userStorage.paymentType,
+      serviceOption: userStorage.serviceOption,
+      isActive: userStorage.isActive,
+      isExpired: userStorage.isExpired,
     };
-  
-    return screenshotStorageData;
   }
-  async addAllUsers(users) {
-    if (!Array.isArray(users)) {
-      throw new Error('Invalid users array');
-    }
-    for (const user of users) {
-      if (typeof user?.userId !== 'number' && typeof user?.userId !== 'string') {
-        // console.log('User ID must be a number or string'); 
-        continue
-      } 
-      const id = String(user.userId);
-      
-      if (!this.storage.has(id)) { 
-        const newUser = {
-          userId: user.userId, 
-          username: user.username,
-          screenshots: new Map(),
-          paymentOption: user.paymentOption || null,
-          paymentType: user.paymentType || null,
-          serviceOption: user.serviceOption || null,
-          isExpired: user.isExpired || false,
-          isActive: user.isActive || false,
-        };
-        
-        // Add screenshots
-        if (user.screenshots) {
-          for (const screenshotId in user.screenshots) {
-            newUser.screenshots.set(screenshotId, user.screenshots[screenshotId]);
-          }
-        }
-        
-        try {
-          this.storage.set(id, newUser);
-          // console.log(`User ${user.username} added to storage`);
-        } catch (error) {
-          console.error(`Error adding user to storage: ${error}`);
-        }
-      } else {
-        console.log(`User ${user.username} already exists in storage`);
+  /**
+ * Add multiple users to the storage.
+ */
+async addAllUsers(users) {
+  if (!Array.isArray(users)) throw new Error("Invalid users array");
+  
+  for (const user of users) {
+    if (!user?.userId) continue;
+
+    const id = String(user.userId);
+
+    if (!this.storage.has(id)) {
+      const newUser = {
+        userId: user.userId,
+        username: user.username,
+        screenshots: Array.isArray(user.screenshots) ? user.screenshots : [],
+        package:user.package ?? null,
+        paymentOption: user.paymentOption ?? null,
+        paymentType: user.paymentType ?? null,
+        serviceOption: user.serviceOption ?? null,
+        isExpired: user.isExpired ?? false,
+        isActive: user.isActive ?? false,
+      };
+
+      try {
+        this.storage.set(id, newUser);
+      } catch (error) {
+        console.error(`Error adding user to storage: ${error}`);
       }
     }
-    // return this.storage;
   }
 }
 
-const screenshotStorage = new ScreenshotStorage();
+}
+
+
+
+
+const screenshotStorage = new ScreenshotStorage()
 module.exports = screenshotStorage;

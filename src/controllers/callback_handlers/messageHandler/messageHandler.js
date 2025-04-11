@@ -71,214 +71,154 @@ async function handleMessages(ctx) {
         // console.log(message.text,"code")
         await retryApiCall(() => handleGiftCoupon(ctx));
       }
-    }
-    // Handle photo messages
-    else if (message.photo) {
-      const userId = ctx.from?.id;
-      const username = ctx.from?.username;
-
-      // Check if paymentType is set
-      const paymentOption = await screenshotStorage?.getPaymentOption(userId);
-      const paymentType = await screenshotStorage?.getPaymentType(userId);
-      const serviceOption = await screenshotStorage?.getServiceOption(userId);
-      const normalizedPaymentOption = paymentOption?.replace(/-.*/, "").trim();
-      const normalizedPaymentType = (paymentType || "").trim();
-
-      // Verify user ID existence
-      if (!userId) {
-        await handleErrorMessage(
-          ctx,
-          message,
-          "<i>🤦‍♂️ Sorry, we couldn't verify your user ID. Please restart the process by clicking on the Main Menu or contact support.</i>",
-          10000
-        );
-        return;
-      }
-
-      // Verify username existence
-      if (!username) {
-        await handleErrorMessage(
-          ctx,
-          message,
-          "<i>To continue, please add a username to your Telegram account. This will help us verify your identity. You can do this by going to Settings > Username.</i>",
-          10000
-        );
-        return;
-      }
-
-      // Store user information before sending screenshot
-      createUserInstance.setUserProperties(userId, username, ctx);
-      createUserInstance.subscriptionStatus("inactive");
-
-      // Save user data to database
-      try {
-        await createUserInstance.saveUserToDB();
-      } catch (error) {
-        await handleErrorMessage(
-          ctx,
-          message,
-          "Error saving user data. Please try again later.",
-          5000
-        );
-        return;
-      }
-
-      const photoId = message.photo[message.photo.length - 1].file_id;
-      const messageId = message.message_id;
-      const screenshotData = {
-        photoId,
-        messageId,
-        username,
-      };
-      const userStorage = await screenshotStorage.addScreenshot(
-        userId,
-        screenshotData,
-        serviceOption === "3 Days BootCamp" ? "BootCamp" : "Generic"
-      );
-
-      if (!userStorage) {
-        await handleErrorMessage(
-          ctx,
-          message,
-          "Error storing screenshot data. Please try again.",
-          5000
-        );
-        return;
-      }
-
-      // Define valid payment options based on service option
-      let validPaymentOptions;
-      if (serviceOption === "Vip Signal") {
-        validPaymentOptions = paymentOptions.filter((option) =>
-          option.includes("Month")
-        );
-      } else if (serviceOption === "Mentorship") {
-        validPaymentOptions = ["Group Mentorship Fee", "1"];
-      } else if (serviceOption === "3 Days BootCamp") {
-        validPaymentOptions = ["Pay Fee: $79.99"];
-      } else if (serviceOption === "Fund Management") {
-        validPaymentOptions = paymentOptions.filter((option) =>
-          option.includes("$10,000")
-        );
-      } else {
-        await handleErrorMessage(
-          ctx,
-          message,
-          "Invalid service option selected. Please select VIP Signal, Mentorship, Fund Management, or 3 Days Boot Camp.",
-          5000
-        );
-        return;
-      }
-
-      const isValidPaymentType = paymentTypes.includes(normalizedPaymentType);
-      const isValidPaymentOption = validPaymentOptions.includes(
-        normalizedPaymentOption
-      );
-
-      if (!isValidPaymentOption) {
-        if (serviceOption === "Mentorship") {
-          await handleErrorMessage(
-            ctx,
-            message,
-            `Please select a valid payment option for Mentorship: ${validPaymentOptions.join(
-              ", "
-            )}.`,
-            5000
-          );
-        } else if (serviceOption === "Vip Signal") {
-          await handleErrorMessage(
-            ctx,
-            message,
-            `Please select a valid payment option for VIP Signal: ${validPaymentOptions.join(
-              ", "
-            )}.`,
-            5000
-          );
-        } else if (serviceOption === "3 Days BootCamp") {
-          await handleErrorMessage(
-            ctx,
-            message,
-            `Please select a valid payment option for 3 Days Boot Camp: ${validPaymentOptions.join(
-              ", "
-            )}.`,
-            5000
-          );
-        } else {
-          await handleErrorMessage(
-            ctx,
-            message,
-            `Please select valid payment option for ${serviceOption}: $10,000 - $49,000.`,
-            5000
-          );
-        }
-        return;
-      }
-
-      if (!isValidPaymentType) {
-        await handleErrorMessage(
-          ctx,
-          message,
-          "Payment type selection failed! \n\n<i>Possible reasons:</i>\n\n1. Network issues\n2. Technical difficulties\n3. Slow connection\n\n<i>Please retry:</i>\n\n1. Return to Main Menu\n2. Select payment type (e.g., USDT, BTC)\n3. Look for confirmation notification at the top of your screen.\n\n<i>Try again, we're here to assist! </i>",
-          15000
-        );
-        return;
-      }
-      const caption = generateCaption(
-        ctx,
-        serviceOption,
-        paymentOption,
-        paymentType
-      );
-      const channelId = process.env.APPROVAL_CHANNEL_ID;
-      const messageIdCount = await screenshotStorage.getMessageIdCount(userId);
-      const inlineKeyboard = [
-        [
-          {
-            text: "Approve",
-            callback_data: `approve_${userId}_${messageIdCount - 1}`,
-          },
-        ],
-        [
-          {
-            text: "Appeal",
-            callback_data: `appeal_${userId}_${messageIdCount - 1}`,
-          },
-        ],
-      ];
-
-      const responseChannel = await retryApiCall(() =>
-        ctx.api.sendPhoto(channelId, photoId, {
-          caption,
-          reply_markup: { inline_keyboard: inlineKeyboard },
-          parse_mode: "HTML",
-        })
-      );
-
-      const responsePayment = await retryApiCall(() =>
-        ctx.reply(
-          "Payment screenshot sent for verification. Please wait for approval.",
-          {
-            reply_markup: {
-              inline_keyboard: [
-                [{ text: "Go Back", callback_data: "mainmenu" }],
-              ],
-            },
-          }
-        )
-      );
-
-      const channelMessageId = responseChannel.message_id;
-      const paymentMessageId = responsePayment.message_id;
-      await screenshotStorage.updateChannelAndPaymentMessageId(
-        userId,
-        channelMessageId,
-        paymentMessageId
-      );
-      await catchMechanismClassInstance.addCatchMechanism(userId);
+    } else if (message?.photo) {
+      await handlePhotoMessage(ctx, message);
     }
   } catch (error) {
     await handleError(ctx, error);
   }
+}
+
+async function handlePhotoMessage(ctx, message) {
+  const userId = ctx.from?.id;
+  const username = ctx.from?.username;
+
+  if (!userId) {
+    await handleErrorMessage(ctx, message, "Could not verify user ID. Restart or contact support.", 10000);
+    return;
+  }
+
+  if (!username) {
+    await handleErrorMessage(ctx, message, "Please add a username in Telegram settings.", 10000);
+    return;
+  }
+
+  createUserInstance.setUserProperties(userId, username, ctx);
+  createUserInstance.subscriptionStatus("inactive");
+
+  try {
+    await createUserInstance.saveUserToDB();
+  } catch (error) {
+    await handleErrorMessage(ctx, message, "Error saving user data.", 5000);
+    return;
+  }
+
+  const photoId = message.photo[message.photo.length - 1].file_id;
+  const serviceOption = await screenshotStorage?.getServiceOption(userId);
+  const messageId = message.message_id
+  const userStorage = await screenshotStorage.addScreenshot(
+    userId,
+    { photoId, messageId, username },
+    serviceOption === "3 Days BootCamp" ? "BootCamp" : "Generic"
+  );
+
+  if (!userStorage) {
+    await handleErrorMessage(ctx, message, "Error storing screenshot data.", 5000);
+    return;
+  }
+
+  let validPaymentOptions;
+  switch (serviceOption) {
+    case "Vip Signal":
+      validPaymentOptions = paymentOptions.filter(option => option.includes("Month"));
+      break;
+    case "Mentorship":
+      validPaymentOptions = ["Group Mentorship Fee", "1"];
+      break;
+    case "3 Days BootCamp":
+      validPaymentOptions = ["Pay Fee: $79.99"];
+      break;
+    case "Fund Management":
+      validPaymentOptions = paymentOptions.filter(option => option.includes("$10,000"));
+      break;
+    default:
+      await handleErrorMessage(ctx, message, "Invalid service option selected.", 5000);
+      return;
+  }
+
+  const paymentOption = await screenshotStorage?.getPaymentOption(userId);
+  const paymentType = await screenshotStorage?.getPaymentType(userId);
+
+  const normalizedPaymentOption = paymentOption?.replace(/-.*/, "").trim();
+  const normalizedPaymentType = (paymentType || "").trim();
+
+  if (!validPaymentOptions.includes(normalizedPaymentOption)) {
+    await handleErrorMessage(ctx, message, `Invalid payment option for ${serviceOption}.`, 5000);
+    return;
+  }
+
+  if (!paymentTypes.includes(normalizedPaymentType)) {
+    await handleErrorMessage(ctx, message, "Invalid payment type.", 15000);
+    return;
+  }
+
+  const caption = generateCaption(ctx, serviceOption, paymentOption, paymentType);
+  const channelId = process.env.APPROVAL_CHANNEL_ID;
+
+  const messageIdCount = await screenshotStorage.getMessageIdCount(userId);
+  if (messageIdCount === null) {
+    throw new Error("Message ID count is null, cannot proceed.");
+  }
+
+  const inlineKeyboard = [
+    [{ text: "Approve", callback_data: `approve_${userId}_${messageIdCount - 1}` }],
+    [{ text: "Appeal", callback_data: `appeal_${userId}_${messageIdCount - 1}` }],
+  ];
+
+  const responseChannel = await retryApiCall(() =>
+    ctx.api.sendPhoto(channelId, photoId, {
+      caption,
+      reply_markup: { inline_keyboard: inlineKeyboard },
+      parse_mode: "HTML",
+    })
+  );
+
+  const responsePayment = await retryApiCall(() =>
+    ctx.reply("Payment screenshot sent for verification. Please wait for approval.", {
+      reply_markup: { inline_keyboard: [[{ text: "Go Back", callback_data: "goback" }]] },
+    })
+  );
+
+  await screenshotStorage.updateChannelAndPaymentMessageId(
+    userId,
+    messageId,
+    responseChannel.message_id,
+    responsePayment.message_id
+  );
+
+  await catchMechanismClassInstance.addCatchMechanism(userId);
+}
+
+async function handleErrorMessage(ctx, message, errorMessage, timeOut) {
+  try {
+    // Delete original message
+    await retryApiCall(() =>
+      ctx.api.deleteMessage(ctx.chat.id, message.message_id)
+    );
+
+    // Send error message
+    const replyMessage = await retryApiCall(() =>
+      ctx.reply(errorMessage, { parse_mode: "HTML" })
+    );
+
+    // Delete error message after 15 seconds
+    setTimeout(async () => {
+      try {
+        await retryApiCall(() =>
+          ctx.api.deleteMessage(ctx.chat.id, replyMessage.message_id)
+        );
+      } catch (error) {
+        console.error("Error deleting reply message:", error);
+      }
+    }, timeOut);
+  } catch (error) {
+    // Log critical error
+    console.error("Critical error handling error message:", error);
+    handleError(ctx, "Critical error handling error message: " + error);
+  }
+
+  // Exit the function
+  return;
 }
 async function handleErrorMessage(ctx, message, errorMessage, timeOut) {
   try {

@@ -73,7 +73,7 @@ app.listen(PORT, async () => {
     await settings.getSettings()
     // await MessageBotHandler();
   } catch (error) {
-    console.log("Exicuted....")
+    console.log("Exicuted....") 
     await sendSystemInfoToAdmin(error);
     console.log("Done Executing....")
     // Restart the bot using PM2
