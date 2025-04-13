@@ -37,9 +37,49 @@ async function handleChatMember(ctx) {
 
       if (newMemberStatus === "member" && oldMemberStatus === "left") {
         if (!existingUser) {
+          const isLifetime =
+            ctx?.update?.chat_member?.invite_link?.name?.toLowerCase() ===
+            "lifetime";
+
+          if (isLifetime) {
+            const firstName =
+              ctx.update?.chat_member?.new_chat_member?.user?.first_name;
+            const lastName =
+              ctx.update?.chat_member?.new_chat_member?.user?.last_name;
+            const fullName = `${firstName ?? ""} ${lastName ?? ""}`.trim();
+            const username =
+              ctx.update?.chat_member?.new_chat_member?.user?.username;
+
+            await User.create({
+              userId,
+              fullName,
+              username,
+              inviteLink: {
+                link: inviteLink,
+                name: "lifetime",
+              },
+              subscription: {
+                type: "lifetime",
+                expirationDate: null,
+                status: "active",
+              },
+              groupMembership: {
+                groupId: chatId,
+                joinedAt: new Date(),
+              },
+            });
+
+            await ctx.api.sendMessage(
+              userId,
+              "🎉 Welcome! You’ve been granted lifetime access."
+            );
+            console.log(`✅ New lifetime user ${userId} created and added.`);
+            return;
+          }
+
           await ctx.api.sendMessage(
             userId,
-            "You don't have an active subscription."
+            "❌ You don't have an active subscription."
           );
           console.log(inviteLink, "inviteLink");
           await ctx.api.unbanChatMember(chatId, userId);
@@ -79,10 +119,33 @@ async function handleChatMember(ctx) {
             existingUser,
             userId,
             chatId,
-            inviteLink
+            username,
+            fullName
           );
+          const replyMsg = await ctx.api.sendMessage(
+            userId,
+            "Welcome to our channel! Your subscription is active."
+          );
+          setTimeout(async () => {
+            await retryApiCall(() =>
+              ctx.api.deleteMessage(replyMsg.chat.id, replyMsg.message_id)
+            );
+          }, 5000); // 5000 milliseconds = 5 seconds
+
+          console.log(`User ${userId} joined successfully.`);
         } else {
           await handleNewUser(ctx, userId, chatId, inviteLink);
+          const replyMsg = await ctx.api.sendMessage(
+            userId,
+            "Welcome to our channel! Your subscription is active."
+          );
+          setTimeout(async () => {
+            await retryApiCall(() =>
+              ctx.api.deleteMessage(replyMsg.chat.id, replyMsg.message_id)
+            );
+          }, 5000); // 5000 milliseconds = 5 seconds
+
+          console.log(`User ${userId} joined successfully.`);
         }
       } else {
         // Handle other membership status updates
@@ -94,7 +157,10 @@ async function handleChatMember(ctx) {
         //   oldMemberStatus === "kicked" && newMemberStatus === "left";
 
         if (userHasLeftGroup) {
-          if (existingUser?.inviteLink?.link) {
+          const isLifetimeUser =
+            existingUser?.subscription?.type === "lifetime";
+
+          if (!isLifetimeUser && existingUser?.inviteLink?.link) {
             try {
               await ctx.api.revokeChatInviteLink(
                 chatId,
@@ -103,17 +169,19 @@ async function handleChatMember(ctx) {
               console.log(
                 "Invite link has been revoked for " + existingUser?.username
               );
+
               await ctx.api.sendMessage(
                 userId,
-                "<i>Your subscription has expired because you left the channel you will not have access to it until you renew your package.</i>",
+                "<i>Your subscription has expired because you left the channel. You will not have access until you renew your package.</i>",
                 { parse_mode: "HTML" }
               );
-              // Update user info to null
+
               await UserInfo.updateUser(existingUser.userId, {
                 "groupMembership.groupId": null,
                 "groupMembership.joinedAt": null,
                 "subscription.status": "left",
               });
+
               console.log(
                 `User ${existingUser?.username} updated: removed from group.`
               );
@@ -128,6 +196,16 @@ async function handleChatMember(ctx) {
                 console.error("Error revoking invite link:", error);
               }
             }
+          } else if (isLifetimeUser) {
+            console.log(
+              `Lifetime user ${existingUser?.username} left the group, but access remains.`
+            );
+
+            // Optional: just update group info, but leave subscription as active
+            await UserInfo.updateUser(existingUser.userId, {
+              "groupMembership.groupId": null,
+              "groupMembership.joinedAt": null,
+            });
           } else {
             console.log(
               "No invite link found for user " + existingUser?.username
@@ -135,144 +213,178 @@ async function handleChatMember(ctx) {
           }
         }
       }
-
-      // Send welcome message if user is allowed to join
-      if (existingUser) {
-        const replyMsg = await ctx.api.sendMessage(
-          userId,
-          "Welcome to our channel! Your subscription is active."
-        );
-        setTimeout(async () => {
-          await retryApiCall(() =>
-            ctx.api.deleteMessage(replyMsg.chat.id, replyMsg.message_id)
-          );
-        }, 5000); // 5000 milliseconds = 5 seconds
-
-        console.log(`User ${userId} joined successfully.`);
-      }
     } else {
       console.log("User is a bot");
       return;
     }
-
-    // Function to handle existing users
-    async function handleExistingUser(ctx, existingUser, userId, chatId) {
-      const invalidStatuses = ["expired", "inactive", "left"];
-      const validSubscriptionTypes = [
-        "one_month",
-        "three_months",
-        "six_months",
-        "twelve_months",
-      ];
-      if (invalidStatuses.includes(existingUser.subscription.status)) {
-        const replyMsg = await ctx.api.sendMessage(
-          userId,
-          "Your subscription has expired or is inactive. Please renew before joining."
-        );
-        setTimeout(async () => {
-          await retryApiCall(() =>
-            ctx.api.deleteMessage(replyMsg.chat.id, replyMsg.message_id)
-          );
-        }, 10000); // 10000 milliseconds = 10 seconds
-        await retryApiCall(() => ctx.api.unbanChatMember(chatId, userId));
-        console.log(
-          `User ${userId} with expired/inactive subscription prevented from joining.`
-        );
-        return;
-      } else if (existingUser.subscription.status === "pending") {
-        if (!validSubscriptionTypes.includes(existingUser.subscription.type)) {
-          await ctx.api.sendMessage(
-            userId,
-            `Invalid subscription type ${existingUser.subscription.type}. Please contact support or choose the allowed Vip service options and resend your screenshot. `
-          );
-          // setTimeout(async () => {
-          //   await retryApiCall(() =>
-          //     ctx.api.deleteMessage(replyMsg.chat.id, replyMsg.message_id)
-          //   );
-          // }, 10000); // 10000 milliseconds = 10 seconds
-          await retryApiCall(() => ctx.api.unbanChatMember(chatId, userId));
-          console.log(
-            `User ${userId} with invalid subscription type prevented from joining.`
-          );
-          return;
-        }
-        await retryApiCall(() =>
-          UserInfo.updateUser(existingUser.userId, {
-            "groupMembership.groupId": chatId,
-            "groupMembership.joinedAt": new Date(),
-            "subscription.status": "active",
-          })
-        );
-        console.log(`User ${userId} updated successfully`);
-      }
-    }
-
-    // Function to handle new users
-    async function handleNewUser(ctx, userId, chatId, inviteLink) {
-      const userWithSameLink = await User.findOne({
-        "inviteLink.link": inviteLink,
-      });
-      const invalidStatuses = ["expired", "inactive", "left"];
-      const validSubscriptionTypes = [
-        "one_month",
-        "three_months",
-        "six_months",
-        "twelve_months",
-      ];
-
-      if (userWithSameLink) {
-        if (invalidStatuses.includes(userWithSameLink.subscription.status)) {
-          const replyMsg = await ctx.api.sendMessage(
-            userId,
-            "Your subscription has expired or is inactive. Please renew before joining."
-          );
-          setTimeout(async () => {
-            await retryApiCall(() =>
-              ctx.api.deleteMessage(replyMsg.chat.id, replyMsg.message_id)
-            );
-          }, 10000); // 10000 milliseconds = 10 seconds
-          await retryApiCall(() => ctx.api.unbanChatMember(chatId, userId));
-          console.log(
-            `User ${userId} with expired/inactive subscription prevented from joining.`
-          );
-          return;
-        } else if (userWithSameLink.subscription.status === "pending") {
-          if (
-            !validSubscriptionTypes.includes(userWithSameLink.subscription.type)
-          ) {
-            await ctx.api.sendMessage(
-              userId,
-              `Invalid subscription type ${userWithSameLink.subscription.type}. Please contact support or choose the allowed Vip service options and resend your screenshot. `
-            );
-            // setTimeout(async () => {
-            //   await retryApiCall(() =>
-            //     ctx.api.deleteMessage(replyMsg.chat.id, replyMsg.message_id)
-            //   );
-            // }, 10000); // 10000 milliseconds = 10 seconds
-            await retryApiCall(() => ctx.api.unbanChatMember(chatId, userId));
-            console.log(
-              `User ${userId} with invalid subscription type prevented from joining.`
-            );
-            return;
-          }
-          await retryApiCall(() =>
-            UserInfo.updateUser(userWithSameLink.userId, {
-              userId,
-              fullName,
-              username,
-              "groupMembership.joinedAt": new Date(),
-              "groupMembership.groupId": chatId,
-              "subscription.status": "active",
-            })
-          );
-          console.log(`User ${userId} updated successfully`);
-        }
-      } else {
-        return;
-      }
-    }
   } catch (error) {
     console.error("Error in handleChatMember:", error);
+  }
+}
+// Function to handle existing users
+
+async function handleExistingUser(
+  ctx,
+  existingUser,
+  userId,
+  chatId,
+  username,
+  fullName
+) {
+  const invalidStatuses = ["expired", "inactive", "left"];
+  const validSubscriptionTypes = [
+    "one_month",
+    "three_months",
+    "six_months",
+    "twelve_months",
+  ];
+
+  // ✅ Handle lifetime user re-join
+  if (existingUser.subscription.type === "lifetime") {
+    const currentInviteLink = ctx.update?.chat_member?.invite_link;
+    const currentLinkName = currentInviteLink?.name?.toLowerCase();
+
+    // const isCorrectLinkUsed = inviteLink === originalLink;
+    const isLifetimeInvite = currentLinkName === "lifetime";
+
+    if (!isLifetimeInvite) {
+      await ctx.api.sendMessage(
+        userId,
+        "⚠️ You used an unauthorized invite link. Access denied."
+      );
+      await retryApiCall(() => ctx.api.unbanChatMember(chatId, userId));
+
+      console.warn(
+        `🚫 User ${userId} tried to rejoin with a different or unauthorized link.`
+      );
+      return;
+    }
+
+    // ✅ Safe to proceed
+    await UserInfo.updateUser(existingUser.userId, {
+      userId,
+      fullName,
+      username,
+      "groupMembership.groupId": chatId,
+      "groupMembership.joinedAt": new Date(),
+    });
+
+    await ctx.api.sendMessage(
+      userId,
+      "🎉 Welcome back! Your lifetime access has been restored."
+    );
+
+    console.log(`✅ Lifetime user ${userId} rejoined with correct link.`);
+    return;
+  }
+
+  // ❌ Block if status is expired, inactive, or left
+  if (invalidStatuses.includes(existingUser.subscription.status)) {
+    const replyMsg = await ctx.api.sendMessage(
+      userId,
+      "Your subscription has expired or is inactive. Please renew before joining."
+    );
+
+    setTimeout(async () => {
+      await retryApiCall(() =>
+        ctx.api.deleteMessage(replyMsg.chat.id, replyMsg.message_id)
+      );
+    }, 10000);
+
+    await retryApiCall(() => ctx.api.unbanChatMember(chatId, userId));
+    console.log(
+      `User ${userId} with expired/inactive subscription prevented from joining.`
+    );
+    return;
+  }
+
+  // ⏳ Pending valid user
+  if (existingUser.subscription.status === "pending") {
+    if (!validSubscriptionTypes.includes(existingUser.subscription.type)) {
+      await ctx.api.sendMessage(
+        userId,
+        `Invalid subscription type ${existingUser.subscription.type}. Please contact support.`
+      );
+      await retryApiCall(() => ctx.api.unbanChatMember(chatId, userId));
+      console.log(
+        `User ${userId} with invalid subscription type prevented from joining.`
+      );
+      return;
+    }
+
+    await retryApiCall(() =>
+      UserInfo.updateUser(existingUser.userId, {
+        "groupMembership.groupId": chatId,
+        "groupMembership.joinedAt": new Date(),
+        "subscription.status": "active",
+      })
+    );
+    console.log(`User ${userId} updated successfully from pending to active.`);
+  }
+}
+
+// Function to handle new users
+async function handleNewUser(ctx, userId, chatId, inviteLink) {
+  const userWithSameLink = await User.findOne({
+    "inviteLink.link": inviteLink,
+  });
+  const invalidStatuses = ["expired", "inactive", "left"];
+  const validSubscriptionTypes = [
+    "one_month",
+    "three_months",
+    "six_months",
+    "twelve_months",
+  ];
+
+  if (userWithSameLink) {
+    if (invalidStatuses.includes(userWithSameLink.subscription.status)) {
+      const replyMsg = await ctx.api.sendMessage(
+        userId,
+        "Your subscription has expired or is inactive. Please renew before joining."
+      );
+      setTimeout(async () => {
+        await retryApiCall(() =>
+          ctx.api.deleteMessage(replyMsg.chat.id, replyMsg.message_id)
+        );
+      }, 10000); // 10000 milliseconds = 10 seconds
+      await retryApiCall(() => ctx.api.unbanChatMember(chatId, userId));
+      console.log(
+        `User ${userId} with expired/inactive subscription prevented from joining.`
+      );
+      return;
+    } else if (userWithSameLink.subscription.status === "pending") {
+      if (
+        !validSubscriptionTypes.includes(userWithSameLink.subscription.type)
+      ) {
+        await ctx.api.sendMessage(
+          userId,
+          `Invalid subscription type ${userWithSameLink.subscription.type}. Please contact support or choose the allowed Vip service options and resend your screenshot. `
+        );
+        // setTimeout(async () => {
+        //   await retryApiCall(() =>
+        //     ctx.api.deleteMessage(replyMsg.chat.id, replyMsg.message_id)
+        //   );
+        // }, 10000); // 10000 milliseconds = 10 seconds
+        await retryApiCall(() => ctx.api.unbanChatMember(chatId, userId));
+        console.log(
+          `User ${userId} with invalid subscription type prevented from joining.`
+        );
+        return;
+      }
+      await retryApiCall(() =>
+        UserInfo.updateUser(userWithSameLink.userId, {
+          userId,
+          fullName,
+          username,
+          "groupMembership.joinedAt": new Date(),
+          "groupMembership.groupId": chatId,
+          "subscription.status": "active",
+        })
+      );
+      console.log(`User ${userId} updated successfully`);
+    }
+  } else {
+    return;
   }
 }
 
